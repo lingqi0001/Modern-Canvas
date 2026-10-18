@@ -1,0 +1,581 @@
+/* ===== 主题落地表：槽位 → Canvas 日历元素 =====
+   值全部来自 --bc*（导入的主题写在根上），这里不写任何色值。
+   每条都挂 html.mc-themed：没有主题时整份表一条都不生效，Canvas 保持原生。
+   范围按他点的编号：A 月视图、B 周视图、C 拖拽排课编辑器、D Agenda 页、
+   E 日历页右侧栏、F 迷你日历，加 G 里只挑 41 号（日期弹窗顶栏）。 */
+
+/* ---------- A. 月视图 ---------- */
+
+/* 1 整块月历格子区 */
+html.mc-themed #calendar-app .fc-month-view .fc-body {
+  background: var(--bcbackground-0) !important;
+}
+
+/* 2 顶部 周一…周日 表头文字 */
+html.mc-themed #calendar-app .fc-month-view .fc-widget-header {
+  color: var(--bctext-1) !important;
+}
+
+/* 3 今天那一格。[探针 2026-10-06] 月视图里"今天"挂在两颗**兄弟** td 上：
+   背景层 .fc-bg 里的整格（167x216，class="fc-day fc-widget-content fc-tue fc-today"），
+   和内容层 .fc-content-skeleton 的 thead 里那条写日期数字的（167x28，class="fc-day-top ..."）。
+   内容层 z=4 压在背景层上面，所以两条都得管：整格那颗铺底色，数字那条把站点自己刷的
+   rgb(242,244,244) 摘成透明——不摘就会在格子顶上横着露出一条白带，还会把整格那圈描边的
+   上沿盖掉一截。摘成透明之后它显示的就是底下整格那一档，两层永远同色 */
+html.mc-themed #calendar-app .fc-month-view .fc-today.fc-day {
+  background: var(--bcbackground-2) !important;
+}
+
+html.mc-themed #calendar-app .fc-month-view td.fc-day-top.fc-today {
+  background: transparent !important;
+}
+
+/* 4 格子里每一条事件小条 */
+html.mc-themed #calendar-app .fc-event {
+  background: var(--bcbackground-0) !important;
+}
+
+/* 5 事件条的内层背景 */
+html.mc-themed .fc-event .fc-bg {
+  background: var(--bcbackground-1) !important;
+}
+
+/* 6 7 8 事件条上的文字，含悬停态和 jQuery UI 容器里那一套 */
+html.mc-themed .fc-event,
+html.mc-themed .fc-event:hover,
+html.mc-themed .ui-widget .fc-event {
+  color: var(--bctext-1) !important;
+}
+
+/* ---------- B. 周视图 ---------- */
+
+/* 9 周视图表格主体 */
+html.mc-themed #calendar-app .fc-agendaWeek-view .fc-body {
+  background: var(--bcbackground-0) !important;
+}
+
+/* 10 左边那一列时间轴 */
+html.mc-themed #calendar-app .fc-agendaWeek-view .fc-axis {
+  color: var(--bctext-1) !important;
+}
+
+/* 11 周视图顶部日期表头 */
+html.mc-themed #calendar-app .fc-agendaWeek-view .fc-widget-header {
+  color: var(--bctext-1) !important;
+}
+
+/* 12 周视图事件条的底 */
+html.mc-themed #calendar-app .fc-agendaWeek-view .fc-event {
+  background: var(--bcbackground-1) !important;
+}
+
+/* 13 事件条上的时间小字 */
+html.mc-themed .fc-agendaWeek-view .fc-event-container a[class*="group_"] .fc-content .fc-time {
+  color: var(--bctext-1) !important;
+}
+
+/* ---------- C. 拖拽排课编辑器（跟 B 同一套，换一层容器） ---------- */
+
+html.mc-themed #calendar-drag-and-drop-container .fc-agendaWeek-view .fc-body,
+html.mc-themed #calendar-drag-and-drop-container .fc-month-view .fc-body,
+html.mc-themed #calendar-drag-and-drop-container .fc-event {
+  background: var(--bcbackground-0) !important;
+}
+
+html.mc-themed #calendar-drag-and-drop-container .fc-agendaWeek-view .fc-event {
+  background: var(--bcbackground-1) !important;
+}
+
+html.mc-themed #calendar-drag-and-drop-container .fc-agendaWeek-view .fc-axis,
+html.mc-themed #calendar-drag-and-drop-container .fc-agendaWeek-view .fc-widget-header,
+html.mc-themed #calendar-drag-and-drop-container .fc-month-view .fc-widget-header {
+  color: var(--bctext-1) !important;
+}
+
+/* ---------- D. Agenda 页（Dashboard 的 List view） ---------- */
+
+/* 19 整页容器 22 每一天分组的外壳 */
+html.mc-themed .agenda-wrapper,
+html.mc-themed .Day-styles__root {
+  background: var(--bcbackground-0) !important;
+}
+
+/* 20 今天那一天的分组条 21 顶部那颗 Today 按钮 */
+html.mc-themed .agenda-day.agenda-today,
+html.mc-themed #planner-today-btn {
+  background: var(--bcbackground-1) !important;
+}
+
+/* 23 那天的日期标题 */
+html.mc-themed .Day-styles__root h2 {
+  color: var(--bctext-1) !important;
+}
+
+/* ---------- E. 日历页右侧栏 ---------- */
+
+/* 24 我的日历 25 其它日历 29 未定日期事件整块 30 里面每一条 */
+html.mc-themed #calendar-list-holder,
+html.mc-themed #other-calendars-list-holder,
+html.mc-themed #undated-events,
+html.mc-themed #undated-events .event {
+  background: var(--bcbackground-0) !important;
+}
+
+/* 26 27 28 三种容器写法下的同一类行，悬停底色 */
+html.mc-themed #calendars-context-list .context_list_context:hover,
+html.mc-themed #other-calendars-context-list .context_list_context:hover,
+html.mc-themed #context-list .context_list_context:hover {
+  background: var(--bcbackground-1) !important;
+}
+
+/* ---------- F. 迷你日历 ---------- */
+
+/* 31 整个容器 */
+html.mc-themed #minical {
+  background: var(--bcbackground-0) !important;
+}
+
+/* 31b 容器那一圈白边。[探针 2026-10-11] 实测 rgb(232,234,236)，两条线同一个来源：
+   #minical 自己那一圈外框 ＋ .fc-toolbar 底下那条月份标题分隔线。
+   站点这一档浅灰在奶油底上看着就是"没上色"，换成面板边那一档——
+   和上面那颗 "HCPSS System Calendar" 胶囊的描边同一颗变量，所以任何主题下两颗永远同色
+   （这套主题实测 --mc-borders 与 --mc-text-0 都是 #3d251e） */
+html.mc-themed #minical,
+html.mc-themed #minical .fc-toolbar {
+  border-color: var(--mc-borders) !important;
+}
+
+/* 32 33 顶部那行月份标题（它大小写两种类名都写了一遍） */
+html.mc-themed #minical .fc-toolbar h2,
+html.mc-themed #minical .fc-toolbar .h2 {
+  color: var(--bctext-1) !important;
+}
+
+/* 34 格子里的日期数字 36 新版组件那套类名 40 上面那行标题 */
+html.mc-themed #minical .fc-widget-content,
+html.mc-themed .mini_calendar .day,
+html.mc-themed .mini-cal-header {
+  color: var(--bctext-1) !important;
+}
+
+/* 35 上/下月灰着的日期 */
+html.mc-themed #minical .fc-other-month {
+  color: var(--bctext-2) !important;
+}
+
+/* 39 别月日期（新版那套） */
+html.mc-themed .mini_calendar .day.other_month {
+  color: var(--bctext-0) !important;
+}
+
+/* 37 今天那格 */
+html.mc-themed .mini_calendar .day.today {
+  background: var(--bcbackground-2) !important;
+}
+
+/* 38 有事件的格子 */
+html.mc-themed .mini_calendar .day.has_event {
+  background: var(--bcbackground-1) !important;
+}
+
+/* 38b 迷你日历里"今天"那一颗数字。[探针 2026-10-11] 那圈蓝实测 rgb(43,122,188)，
+   24x24 正圆，画在 span.day-number-text 自己身上（两颗 td 全透明，别去那儿找）。
+   这蓝跟 style.css 第 51 节那四颗角标是同一族站点提示色，所以照同一口径翻：
+   底吃强调色，面上那颗数字按强调色自己的明暗翻黑或白，读 --mc-links-ink。
+   多带一层 #minical 抬权重：站点那条只写类名。
+   新版那一套（.mini_calendar .day.today）不在这儿——它整格铺 background-2 的灰，不是一颗圆，
+   形状不同一套口径，没跟着改 */
+html.mc-themed #minical .fc-today .day-number-text {
+  background-color: var(--mc-links) !important;
+  color: var(--mc-links-ink) !important;
+}
+
+/* ---------- 工具条那一条带 ----------
+   [BCP55] 量到白底落在 div.header-bar 上，它上面那条链全是透明。
+   这条要的是"跟页面背景同色"，所以直接透明让页面底透上来，
+   不再挑槽：这套主题里页面底是 background-1(#e3f7ff)、我上一轮给它涂的是 background-0(#edfaff)，
+   差一档就看得出来。换成别的主题也不会又错一档 */
+html.mc-themed #calendar_header .header-bar {
+  background: transparent !important;
+}
+
+/* 带子透明之后，控件得自己带一块板，否则轨道和页面同色、整行看不出边界。
+   板子用 background-0（这套主题里就是那条 #edfaff） */
+html.mc-themed .bc-cal-arrow,
+html.mc-themed button.navigate_today.btn,
+html.mc-themed a#create_new_event_link.btn,
+html.mc-themed .bc-cal-views {
+  background-color: var(--bcbackground-0) !important;
+}
+
+/* ---------- G. 只挑 41：日期弹窗顶部那条 ---------- */
+
+html.mc-themed .ui-dialog .ui-datepicker .ui-widget-header.ui-datepicker-header {
+  background: var(--bcbackground-0) !important;
+}
+
+/* ===== 圆角 =====
+   这一段不挂 mc-themed，挂设置里那颗开关打的 html.mc-cal-round：
+   它改的是形状，没有主题时也该生效。数值跟全站同一档，小条 8px、卡片外壳 12px。
+   顶部工具条那几条（Today / 翻页 / Week·Month·Agenda 分段栏）在 style.css 第 11 节
+   本来就是药丸和正圆，这里不再重复。
+
+   每条都再叠一层 html.mc-cal-page，把整节锁死在日历页。
+   原因：这一节里有几个类名不是日历专用的。.event-details 同时是 Dashboard 右栏
+   Recent Feedback 那张卡的类名（style.css 第 10 节就在按它排版），
+   .agenda-wrapper 和 .Day-styles__root 是首页 Agenda 列表在用的层。
+   上一版没锁页面，圆角糊到了首页的反馈卡上。
+   [改于 2026-10-06] 判据从 :has(.bc-cal-views) 换成 .mc-cal-page。那颗类名是 content.js
+   （document_idle 再等 300 毫秒合并）补在 Week/Month/Agenda 父层上的，整节挂在它身上＝
+   刚进日历页要先看一帧直角的原生卡和他说的"原生 ui"，才翻成我们这套圆角。
+   .mc-cal-page 由 theme-boot.js 在 document_start 按地址挂（/calendar 和 /courses/x/calendar），
+   比页面上任何一颗节点都早，所以首帧就是圆的。两颗判据权重同为 (0,2,1)，级联没动 */
+
+/* 1 事件小条。外层 <a> 圆了不够，里面两层是有自己背景的节点，
+   方角会从圆角里露出来：.fc-content 是文字层，.fc-bg 是铺满整条的覆盖层，
+   Canvas 还在 .fc-bg 里放了一张三格表（我们已经在给 .fc-bg 单独上底色，说明这两层都真实存在）。
+   内层一律 inherit，跟外层同一个数，以后只改一处 */
+html.mc-cal-round.mc-cal-page #calendar-app .fc-event,
+html.mc-cal-round.mc-cal-page #calendar-drag-and-drop-container .fc-event {
+  border-radius: 8px !important;
+}
+
+html.mc-cal-round.mc-cal-page .fc-event .fc-content,
+html.mc-cal-round.mc-cal-page .fc-event .fc-bg,
+html.mc-cal-round.mc-cal-page .fc-event .fc-bg table {
+  border-radius: inherit !important;
+}
+
+/* 2 迷你日历的格子。格子是 <td>，Canvas 那张表按 border-collapse: collapse 画，
+   这种模式下浏览器直接忽略 td 的圆角，所以先把表换成 separate，间距仍给 0，格子不挪位置 */
+html.mc-cal-round.mc-cal-page #minical table,
+html.mc-cal-round.mc-cal-page .mini_calendar table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* 2a 表身自己那一圈圆角。之前只有外壳（下面第 3 条 12px）和每一格（第 2 条 8px）是圆的，
+   <table> 那一层还是方的，所以表四角会顶出一小片方边。separate 已经在这条上面铺好了，
+   这里补 radius＋裁切。不挂 .mc-cal-page：迷你日历在课程首页／大纲页的右侧栏也有，
+   跟第 2b 条同一套来路判据 */
+html.mc-cal-round :is(#right-side, #sidebar_content) :is(#minical, .mini_calendar) table {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+html.mc-cal-round.mc-cal-page #minical .fc-widget-content,
+html.mc-cal-round.mc-cal-page #minical .fc-day,
+html.mc-cal-round.mc-cal-page .mini_calendar .day {
+  border-radius: 8px !important;
+}
+
+/* 2b 上一轮改成 separate 之后冒出来的问题：collapse 下相邻格子共用一条边框，
+   跟底色混在一起看不见；separate 下每个格子各画自己那一圈，就成了每个日期一层的白框。
+   这圈框没有信息量，去掉。表头那条分隔线在 th 上，这里只碰 td，所以留着。
+   "这天有作业/活动"那圈深色状态框画在格子里面的另一层（它到现在还是直角，
+   正好证明它不是 td 自己的边框），把 td 的边框色清掉不会连它一起清掉。
+   [探针] 量到线的真正归属：td 自己的 border-bottom 是 rgba(0,0,0,0)（本来就没有），
+   周与周之间那条白线是 div.fc-row.fc-week 的 border-bottom: rgb(255,255,255)，
+   而且这些 .fc-row 也带 fc-widget-content，被上一条规则的圆角一起命中，
+   所以只清 td 不够，两层都得清。
+   [改于 2026-10-05] 这条其实一直没落地：迷你日历就坐在 #right-side 里，而 style.css 那条
+   "右侧栏数据表格"（:is(#right-side,#sidebar_content) :is(table.summary, table, .summary) :is(th,td,…)）
+   把 fullcalendar 那张表也算成了数据表，给它每一格刷上 border-color: var(--mc-borders)（这套主题实测
+   #a8cbb7 草绿）。那条带一个 id ＋ 三层 :is() 里还多带一个类＝权重 (1,2,3)，这条原本只有 (1,2,2)，
+   所以每个日期格被刷出一圈绿框（td.fc-day 圆角一圈＋里面 td.fc-day-top 直角一圈，两圈叠着更像变深）。
+   只清边框：那条规则给格子的文字色和摘底留着不动，实测数字还是 rgb(54,38,33)。
+   [改于 2026-10-05 第二轮] 这条原本还挂着 :has(.bc-cal-views)，而那个类名是 content.js（document_idle）
+   补在 Week/Month/Agenda 工具条上的，迷你日历那张表却是站点自己的脚本先画出来的——
+   中间这段空档里绿框照旧在屏幕上，就是他说的"刚进入的一瞬间总是能看到这些框"。
+   所以清线这条不再等那个类名：锚点改成绿框真正的来路（style.css 那条只能顺着 #right-side / #sidebar_content
+   才打得到格子），两颗 id 权重 (2,1,4) 严格压过它 (1,2,3)，不赌两张样式表的先后顺序。
+   圆角那几条原本也等 .bc-cal-views，现在整节改挂地址判据 .mc-cal-page，同一帧就圆上了 */
+html.mc-cal-round :is(#right-side, #sidebar_content) :is(#minical, .mini_calendar) table tr td,
+html.mc-cal-round :is(#right-side, #sidebar_content) :is(#minical, .mini_calendar) .fc-row {
+  border-color: transparent !important;
+}
+
+/* 3 迷你日历整块外壳（旧版 #minical、新版 .mini_calendar 两套类名都写，
+   跟上面颜色那节同一处理方式） */
+html.mc-cal-round.mc-cal-page #minical,
+html.mc-cal-round.mc-cal-page .mini_calendar {
+  border-radius: 12px !important;
+}
+
+/* 4 右侧日历列表的每一行：我的日历、其它日历、三种容器写法下的同一类行，
+   还有 UNDATED 里每一条。行里的链接是撑满的一层，跟着圆 */
+html.mc-cal-round.mc-cal-page #calendars-context-list .context_list_context,
+html.mc-cal-round.mc-cal-page #other-calendars-context-list .context_list_context,
+html.mc-cal-round.mc-cal-page #context-list .context_list_context,
+html.mc-cal-round.mc-cal-page #undated-events .event {
+  border-radius: 8px !important;
+}
+
+html.mc-cal-round.mc-cal-page #calendars-context-list .context_list_context > a,
+html.mc-cal-round.mc-cal-page #other-calendars-context-list .context_list_context > a,
+html.mc-cal-round.mc-cal-page #context-list .context_list_context > a {
+  border-radius: inherit !important;
+}
+
+/* 5 卡片外壳（日历页那三块 + 日期弹层详情） */
+html.mc-cal-round.mc-cal-page #calendar-list-holder,
+html.mc-cal-round.mc-cal-page #other-calendars-list-holder,
+html.mc-cal-round.mc-cal-page #undated-events,
+html.mc-cal-round.mc-cal-page .event-details {
+  border-radius: 12px !important;
+}
+
+/* 5b Agenda 列表视图：整页容器和每一天的分组卡。
+   这两层不锁页面，因为 Dashboard 的 List view 用的就是同一组类名，而那个视图的圆角
+   他看过之后明确要留。上一版我把整节锁进日历页，顺手把首页 List view 的圆角也关了，是改多。
+   .event-details 不一样：它同时是首页右栏 Recent Feedback 那张卡的类名，那个不圆，
+   所以它留在上面那条带页面锁的里面 */
+html.mc-cal-round .agenda-wrapper {
+  border-radius: 12px !important;
+}
+
+/* 分组卡圆起来之后，"Today" 那行大字顶在左上角的弧线里，看着像被切了一块。
+   卡片补一圈内边距，让文字离边比半径还大一点。
+   这里故意不加 overflow: hidden：卡片底色就画在这一层自己身上，圆角本来就能裁到它，
+   而卡里每一行那颗"三点"菜单弹层一旦被裁就出不来了 */
+html.mc-cal-round .Day-styles__root {
+  border-radius: 12px !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+/* 6 月视图整块大日历。它是一张表，边框走 border-collapse: collapse，
+   tbody 自己挂圆角浏览器不认（迷你日历那次已经踩过），所以圆角打在外层容器上，
+   再用 overflow: hidden 把四个方角裁掉。今天那一格是格子自己的底色，跟着一起被裁。
+   Week 视图没动：它里面那层是滚动容器，父层加裁切有风险，等你说了再上 */
+html.mc-cal-round.mc-cal-page #calendar-app .fc-month-view,
+html.mc-cal-round.mc-cal-page #calendar-drag-and-drop-container .fc-month-view {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+/* [性能核心防御] 样式与布局隔离：
+   Canvas 官方 FullCalendar 在注入 50+ 事件时会触发 500+ 次 getComputedStyle 尺寸量算。
+   contain: layout style 让所有重排计算死死限制在日历视口内部，
+   绝不波及外部 2800+ 节点，瞬间将全页回流压降为容器级微回流，释放主线程！ */
+html.mc-cal-page #calendar-app,
+html.mc-cal-page #calendar-app .fc-view-container,
+html.mc-cal-page #calendar-drag-and-drop-container {
+  contain: layout style !important;
+}
+
+/* 6b [探针定案] 上面那条其实早就生效了（容器 radius 12px、overflow hidden 都在），
+   圆不出来是盒子不同心：容器从 y=98 起、高 603，奶油底色却画在 tbody.fc-body 上、
+   从 y=154 起、高 547。容器顶上那 56px 是 SUN…SAT 表头，它透明，
+   所以顶部两个圆角裁的是一段看不见的空区；底部两个盒子正好对齐（154+547=701=98+603），
+   这就是"下面圆了、上面没圆"。把底色提到容器这一层，四角一起圆。
+   代价说清楚：SUN…SAT 那一行从此也在卡片底色里，整块是一张完整的日历卡。
+   底色跟格子取同一个槽：格子是 background-0，容器也用 background-0。
+   上一版这里用的是 --mc-card，它映射到 cards 槽，这套主题里比 background-0 浅一档，
+   结果表头成了一块白顶盖。没主题时 cards 槽不存在，退回 --mc-card 的白 */
+html.mc-cal-round.mc-cal-page #calendar-app .fc-month-view,
+html.mc-cal-round.mc-cal-page #calendar-drag-and-drop-container .fc-month-view {
+  background: var(--bcbackground-0, var(--mc-card)) !important;
+}
+
+/* 6c 内部网格线，和表头下面那条线，是同一个来源：
+   [探针] 格子 td 四条边各 0.67px 的 rgb(221,221,221)，表是 border-collapse: collapse，
+   所以相邻格子共用一条线。整片清成透明就一起没了。
+   只清 td/th 自己的边框，事件小条那圈彩色边框在 .fc-event 身上，不在这里列的层上，不会跟着没 */
+html.mc-cal-round.mc-cal-page #calendar-app .fc-month-view td,
+html.mc-cal-round.mc-cal-page #calendar-app .fc-month-view th,
+html.mc-cal-round.mc-cal-page #calendar-drag-and-drop-container .fc-month-view td,
+html.mc-cal-round.mc-cal-page #calendar-drag-and-drop-container .fc-month-view th {
+  border-color: transparent !important;
+}
+
+/* 7 右侧列表的滚动条。探针量到真正在滚的就是 #calendar-list-holder 自己
+   （max-height:300px、overflow-y:auto、内容 514px），而它正是挂 12px 圆角那一层。
+   Chrome 不把原生滚动条裁进圆角，方头滑块会顶出卡片四个角。
+   这里换成 4px 宽的圆头滑块，轨道透明，首尾各留 8px 空，滑块走不进圆角那圈弧里。
+   注意：不能再给这些层加 scrollbar-width / scrollbar-color，
+   Chrome 121 起只要这两个属性是非 auto 值，整条 ::-webkit-scrollbar 自定义就被忽略 */
+html.mc-cal-round.mc-cal-page #calendar-list-holder::-webkit-scrollbar,
+html.mc-cal-round.mc-cal-page #other-calendars-list-holder::-webkit-scrollbar,
+html.mc-cal-round.mc-cal-page #undated-events::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+html.mc-cal-round.mc-cal-page #calendar-list-holder::-webkit-scrollbar-track,
+html.mc-cal-round.mc-cal-page #other-calendars-list-holder::-webkit-scrollbar-track,
+html.mc-cal-round.mc-cal-page #undated-events::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+html.mc-cal-round.mc-cal-page #calendar-list-holder::-webkit-scrollbar-thumb,
+html.mc-cal-round.mc-cal-page #other-calendars-list-holder::-webkit-scrollbar-thumb,
+html.mc-cal-round.mc-cal-page #undated-events::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.18) !important;
+  border: 3px solid transparent !important;
+  background-clip: padding-box !important;
+  border-radius: 9999px !important;
+}
+
+/* 首尾那 8px 是滚动条两端的按钮位，把它撑开留白，滑块就到不了角上 */
+html.mc-cal-round.mc-cal-page #calendar-list-holder::-webkit-scrollbar-button,
+html.mc-cal-round.mc-cal-page #other-calendars-list-holder::-webkit-scrollbar-button,
+html.mc-cal-round.mc-cal-page #undated-events::-webkit-scrollbar-button {
+  display: block !important;
+  width: 10px !important;
+  height: 8px !important;
+  background: transparent !important;
+}
+
+/* 7b 列表内容贴着边框盒画，最后一行那颗课程色点会插进底部圆角的缺口里。
+   探针量到这几层 padding 是 0，补 3px 让内容离边。滚动条画在 padding 之外，
+   所以这 3px 不会把滑块挤回去 */
+html.mc-cal-round.mc-cal-page #calendar-list-holder,
+html.mc-cal-round.mc-cal-page #other-calendars-list-holder,
+html.mc-cal-round.mc-cal-page #undated-events {
+  padding: 3px !important;
+}
+
+/* 7c 月视图格子区右侧那条滚动条，同样收成细圆头，而且比侧栏那条再窄一档
+   （轨道 8px、四周各留 2px 透明边，实际看到的滑块 4px）。
+   这里没有点名是哪一层在滚：格子区的滚动层是 Canvas 内部生成的，
+   所以规则挂在 #calendar-app 里所有滚动容器上——范围已经锁在日历控件内部，
+   加上整节还要 html.mc-cal-page（地址判据），糊不到别的页面 */
+html.mc-cal-round.mc-cal-page #calendar-app ::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+html.mc-cal-round.mc-cal-page #calendar-app ::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+html.mc-cal-round.mc-cal-page #calendar-app ::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.18) !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+  border-radius: 9999px !important;
+}
+
+html.mc-cal-round.mc-cal-page #calendar-app ::-webkit-scrollbar-button {
+  display: block !important;
+  width: 8px !important;
+  height: 6px !important;
+  background: transparent !important;
+}
+
+/* 8 迷你日历顶上那对 ‹ ›（右侧栏那块，旧版 #minical、新版 .mini_calendar、
+   还有侧栏 fullcalendar 自己生成的这一套，类名都是 .fc-prev-button / .fc-next-button，
+   实测整页只有这两颗挂这俩类，不会碰到别处）。
+   对齐 Edit Event 里那颗日历图标按钮那一档：透明底、无边框、10px 圆角、经过时一颗平铺浅底。
+   站点原来是 26x34、radius 4px。字色不动（实测两颗都是站点那档深灰，本来就一致）。
+   圆角和经过底色挂在 mc-cal-round 这颗开关下，跟上面那几节同一口径；
+   焦点环不挂 —— 那是缺陷不是造型，见下面第 9 节 */
+html.mc-cal-round .fc-prev-button,
+html.mc-cal-round .fc-next-button {
+  border-radius: 10px !important;
+  transition: background-color 0.15s ease !important;
+}
+
+html.mc-cal-round .fc-prev-button:hover,
+html.mc-cal-round .fc-next-button:hover {
+  background-color: var(--mc-tint) !important;
+}
+
+/* 点完 ‹ › 会留下一圈焦点环。可读样式表里没有任何一条给这两颗写 outline，
+   所以那是 Chrome 自己描的默认环（跟着那颗的圆角走，实测 outline-width 2.667px）。
+   [改于 2026-10-04] 上一版把它换成主题那档分隔色（--mc-line），他在 Inbox 那页点名要去掉这种圈，
+   并说成绩页同理，所以这一颗跟 .mc-select-btn 一起抹平：:focus 和 :focus-visible 都不留圈。
+   经过时另有 --mc-tint 那档平涂，落点不是完全没提示 */
+.fc-prev-button:focus,
+.fc-next-button:focus,
+.fc-prev-button:focus-visible,
+.fc-next-button:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
+/* ===== 10 加载中的那一颗圈 =====
+   以前由设置里那颗 Loading spinner 管，2026-10-11 那颗删掉＝常开；还在等回包这件事由 content.js 的
+   mcCalendarLoading 翻成 <html> 上的 mc-cal-loading，这一节只管画面。
+   规格照抄首页卡片墙骨架那颗转圈（style.css 的 .ic-DashboardCard 那一节），两处的圈要一模一样：
+   轨道＝页面底那一档 background-1，转的那一段按轨道自己的明暗翻黑／白
+   （--mc-plate-1-ink 在 theme-boot.js 首帧写好，读不到就退成正文色）。
+   主日历是 background-0，这两档跟它都拉得开，不会转成一团糊。
+   [改于 2026-10-06] 位置从"整块主日历正中"挪进"今天"那一格（就是那块灰底）：
+   等回包的时候眼睛本来就落在今儿上，圈在格子中间转，比悬在整页正中更说得出自己在等什么。
+   翻到别的月份时这一屏没有今天那一格，退到整块主日历正中，不能因为找不到落脚的格子就不画。
+   认今天那一格时只认 .fc-today.fc-day 那一颗（月视图里"今天"挂在两颗兄弟 td 上，
+   另一颗是写日期数字的那条，见第 11 节），不然两颗一起转。
+   position: relative 只在转圈这一刻挂，平时一个字节都不动它的布局；
+   pointer-events: none 保证这颗假想的圈不挡下面任何一次点击 */
+html.mc-cal-loading #calendar-app .fc-month-view .fc-today.fc-day,
+html.mc-cal-loading #calendar-app:not(.mc-cal-has-today) {
+  position: relative;
+}
+
+html.mc-cal-loading #calendar-app .fc-month-view .fc-today.fc-day::after,
+html.mc-cal-loading #calendar-app:not(.mc-cal-has-today)::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 50%;
+  border: 3px solid var(--mc-background-1);
+  border-top-color: var(--mc-plate-1-ink, var(--mc-text-0));
+  animation: mcx-card-spin 0.9s linear infinite;
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* ===== 11 今天这一格改用一圈描边圈出来 =====
+   原来"今天"是 background-2 的一整块灰（他截图里那块灰方格），跟卡片其余部分差一档，
+   整张日历看着不像同一层底。这一版把它并回格子那一档（background-0，和上面 6b 给容器
+   铺的是同一颗），"今天"改由 Accent 那一档描一圈圆角框来说。
+   以前那颗 mc_cal_today_ring 开关（设置里 Accent ring on today）2026-10-11 删掉＝常开：
+   并底和描边是同一件事，从来不许只关一半（只关圈会让今天彻底没标记）。
+   两半各自的分档照这份表自己的老规矩：底色那条要挂 mc-themed（没有主题时整张日历保持原生，
+   我们不去拍平站点自己那一档今日高亮），描边那条只改形状所以不挂。
+   圈用 inset 的 box-shadow 不用 border：border 会被上面那条按 td 摘网格线的
+   border-color: transparent 抢掉，inset 环跟着圆角走，也不占格子一毫米尺寸。
+   只动月视图：周视图的"今天"是那一列的列头，形状不同，先不跟着改。
+   [改于 2026-10-06] 双圈那一次的真正成因（探针量到，不是我推的）：月视图里"今天"这个标记
+   挂在两颗**兄弟** td 上，不是一层套一层——背景层 .fc-bg 里那一整格（167x216，
+   class="fc-day fc-widget-content fc-tue fc-today"）和内容层 .fc-content-skeleton 的 thead 里
+   那条写日期数字的（167x28，class="fc-day-top fc-tue fc-today"）。它俩左上角重合，看着就像
+   同一格里多出来一条框。上一版我按"嵌套"写的 :not(.fc-today .fc-today) 对兄弟完全不成立，
+   所以框和圈各画了两遍。分开认：只认 .fc-day 那一颗，数字那条带的是 .fc-day-top、不带 .fc-day */
+html.mc-themed.mc-cal-page.mc-cal-today-ring #calendar-app .fc-month-view .fc-today.fc-day {
+  background: var(--bcbackground-0) !important;
+}
+
+html.mc-cal-page.mc-cal-today-ring #calendar-app .fc-month-view .fc-today.fc-day {
+  border-radius: 12px !important;
+  box-shadow: inset 0 0 0 2px var(--mc-links) !important;
+}
+
+/* 今天这一格的日期数字摆到那一行正中间。数字原来靠右是站点自己 float: right 推过去的
+   [探针实测 span.fc-day-number float:right，离右边 0px]；格子被框起来之后它贴着右上角
+   就像挂在框外。只搬今天这一颗，别的格子没框，照旧靠右。
+   实测居中：那一行宽 167，数字连内边距 17，左右各 77 */
+html.mc-cal-page.mc-cal-today-ring #calendar-app .fc-month-view td.fc-day-top.fc-today {
+  text-align: center !important;
+}
+
+html.mc-cal-page.mc-cal-today-ring #calendar-app .fc-month-view td.fc-day-top.fc-today .fc-day-number {
+  float: none !important;
+}
+
+/* 再往下挪 3 像素。往下挪的余量只有这么多：[真页实测] 数字那一行 28 像素高，
+   今天这一格第一条事件条从格子顶上算起第 30 像素开始，也就是行底下只剩 2 像素空隙。
+   用 position: relative 而不是 padding／行高，是因为它只挪画面不撑盒子，
+   不会把这一周七列的事件条一起往下顶。加粗这一颗：[真页实测] 它原来和别的格子一样是 400／16px */
+html.mc-cal-page.mc-cal-today-ring #calendar-app .fc-month-view td.fc-day-top.fc-today .fc-day-number {
+  position: relative !important;
+  top: 3px !important;
+  font-weight: 700 !important;
+}
+

@@ -1,0 +1,289 @@
+/* =========================================================
+   提交正文那一层（同源预览页 #preview_frame）与子 iframe 通用美化
+   ========================================================= */
+
+/* 0) 帧内全局自定义滚动条：与顶层文档保持一致的现代细长圆角胶囊样式 */
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+  background-color: transparent !important;
+}
+
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: var(--mc-tint-press, rgba(0, 0, 0, 0.22)) !important;
+  border-radius: 99px !important;
+  border: none !important;
+  transition: background-color 0.2s ease !important;
+}
+
+::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--mc-text-0, rgba(0, 0, 0, 0.42)) !important;
+}
+
+html.bc-colour-mode-dark ::-webkit-scrollbar-thumb,
+html.bc-colour-mode-dark *::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+
+html.bc-colour-mode-dark ::-webkit-scrollbar-thumb:hover,
+html.bc-colour-mode-dark *::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.42) !important;
+}
+
+/* 1) 作业内容那块白纸：只收圆角，底色一个字都不碰 */
+#submission_preview {
+  border-radius: 16px !important;
+}
+
+/* 1b) 交的是文件时那一层换了一张纸：白底画在 table 和它里面那一行 TR 自己身上（两颗都是纯白
+      rgb(255,255,255)，实测 table 1279x68、tr 1279x32，thead 那颗 "Files" 表头透明、
+      露的就是 table 的白）。两颗一起铺同一档＝TR 那一条是在 table 那层上再叠一层半透明白，
+      于是行比表头亮一档（2026-10-10 他截图点的正是这条）。
+      [拍的板 2026-10-10：这一块要跟页面底同一档，不要它再是一块卡]
+      落法＝两颗都摘成透明，让这一层的 body（实测 rgb(227,218,198)＝主题那一片页面底）透出来。
+      不写 var(--mc-background-1)：这一层里那颗自定义属性读回来是空（实测），
+      写上去整条声明作废＝白底又回来；而且这套主题没有 background-1 那一档，
+      外层文档里它退成 #fafaf9（近白），照着写正好是要反过来的那个色。
+      底色挂 html.bcx-themed（没主题时那是站点原本的白纸），透明属"摘"，两边都摘。 */
+html.bcx-themed :is(table.file-upload-submission-table, tr.file-upload-submission) {
+  background-color: transparent !important;
+}
+
+/* 2) Paper View 那颗下拉：底板吃卡底那一档（它坐在页面底那一档上，两档才拉得开）、
+      站点那圈描边摘掉、3px 直角收到输入框那一档 10px。
+      箭头留着浏览器那颗：appearance 一关就没箭头了，而我们没法给背景图箭头用 currentColor */
+html.bcx-themed select.data_view {
+  background-color: var(--mc-background-0) !important;
+  color: var(--mc-text-0) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 0 10px !important;
+  height: 38px !important;
+}
+
+/* 摊开那份名单：能压的只有每行的底色和字色。
+      选中那条**不能吃 --mc-buttons**：这套主题没有 buttons 那一档，它退下来正好等于卡底
+      （实测这一层里两个都是 #edd4d4），照抄过来选中档和别的行一个色＝看不出来选中的是哪条。
+      也不能吃 --mc-tint／--mc-press：那两颗是 style.css 里现算的自定义属性，这一层没有那张表
+      （实测读回来是空）。所以选中档直接点深一档的页面底 */
+html.bcx-themed select.data_view option {
+  background-color: var(--mc-background-0) !important;
+  color: var(--mc-text-0) !important;
+}
+
+html.bcx-themed select.data_view option:checked {
+  background-color: var(--mc-background-1) !important;
+  color: var(--mc-text-0) !important;
+}
+
+html.bcx-themed select.data_view:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* =========================================================
+   下面这一整截＝style.css 第 3054 行那份的"帧内副本"，每一条都前缀 html.bcx-select-frame
+   （那颗类名只有帧里挂，见 select-frame.js 顶上那段）。
+   为什么不把原那份搬过来共用：搬＝顶层文档每一页的每一颗下拉都换一张表来画，
+   而这一轮另一个会话正在改同一批文件；先各自一份、原样不动，等他验过这一屏再说合不合并。
+   改上面那份要记得这里还有一份（搜 bcx-select-frame）。
+   --mc-tint 在这层读不到（它是 style.css 里现算的，这一层没那张表），所以就地给退路：
+   退路那条就是 --mc-tint 自己的算法，不是新造一色。
+   ========================================================= */
+
+@keyframes mcxFrameFadeIn {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mcxFrameFadeOut {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(6px); }
+}
+
+html.bcx-select-frame .bcx-select-wrap {
+  position: relative !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+
+html.bcx-select-frame select.bcx-select-native {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+}
+
+html.bcx-select-frame .bcx-select-btn {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 0 34px 0 16px !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  background-color: var(--mc-buttons) !important;
+  color: var(--mc-text-0) !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  transition: background-color 0.15s ease !important;
+}
+
+html.bcx-select-frame .bcx-select-btn:focus,
+html.bcx-select-frame .bcx-select-btn:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+}
+
+html.bcx-select-frame .bcx-select-label {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+html.bcx-select-frame .bcx-select-btn::after {
+  content: '' !important;
+  flex: 0 0 auto !important;
+  width: 14px !important;
+  height: 14px !important;
+  background-color: currentColor !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+html.bcx-select-frame .bcx-select-wrap.open .bcx-select-btn::after {
+  transform: rotate(180deg) !important;
+}
+
+html.bcx-select-frame .bcx-select-menu {
+  display: none !important;
+  position: absolute !important;
+  top: calc(100% + 6px) !important;
+  left: 0 !important;
+  min-width: 100% !important;
+  background: var(--mc-background-0) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+  padding: 4px !important;
+  box-sizing: border-box !important;
+  z-index: 99999 !important;
+}
+
+/* 这一层文档里没有 html.bcx-frost：theme-frame-boot.js 第 40 行只往这一层的 <html> 抄
+   bcx-themed 那一颗类名，磨砂那颗不抄。所以这里按本文件顶上写的口径挂 bcx-themed——
+   卡底是实色的那些主题里糊画在自己的底色之下＝零变化（主文档第 21 节那条同一理由） */
+html.bcx-themed.bcx-select-frame .bcx-select-menu {
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(14px) saturate(1.3);
+}
+
+html.bcx-select-frame .bcx-select-wrap.open .bcx-select-menu {
+  display: block !important;
+  animation: mc-view-menu-open 360ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transform-origin: top right !important;
+}
+
+html.bcx-select-frame .bcx-select-wrap.closing .bcx-select-menu {
+  display: block !important;
+  animation: mc-view-menu-close 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+  transform-origin: top right !important;
+}
+
+@keyframes mc-view-menu-open {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes mc-view-menu-close {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.bcx-select-frame .bcx-select-wrap.open .bcx-select-menu {
+    animation: none !important;
+  }
+
+  html.bcx-select-frame .bcx-select-wrap.closing .bcx-select-menu {
+    display: none !important;
+    animation: none !important;
+  }
+}
+
+html.bcx-select-frame .bcx-select-opt {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 7px 10px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: var(--mc-text-0) !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: background-color 0.15s ease !important;
+}
+
+html.bcx-select-frame .bcx-select-opt:hover {
+  background-color: var(--mc-tint, color-mix(in srgb, var(--mc-text-0) 8%, transparent)) !important;
+}
+
+html.bcx-select-frame .bcx-select-opt.selected::after {
+  content: '' !important;
+  flex: 0 0 auto !important;
+  width: 14px !important;
+  height: 14px !important;
+  background-color: currentColor !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat !important;
+}
+
+/* =========================================================
+   TinyMCE 写作帧（答题屏那四张 about:blank 帧）：白纸钉死
+   =========================================================
+   [实测 2026-10-11 答题屏] 写作区被刷成主题底档那一抹绿。真凶是 theme-frame-boot.js
+   把整张主题表原样抄进了这张帧（表头一条 body{background:…!important}），已在 JS 那头
+   让这一棵帧整个不进。这里补的是同一条口径的正面写法：就算以后别的通路又把颜色带进帧里，
+   白纸这一条是 user 层 !important，压得过帧内任何作者表（包括 BetterCampus 自己往帧里刷的）。
+   只认 TinyMCE 写作 body 那颗类名，作业预览帧（#submission_preview 那张纸）另有第 1 条管，
+   两边互不吃对方的地盘。字色一个字不碰（那是老师/学生自己格式的地盘）。
+   ========================================================= */
+body.mce-content-body {
+  background-color: #fff !important;
+}
+
+/* 打字帧（TinyMCE 写作区）里也强制系统字体：主题那条按需分包的 Google 字体
+   一旦落到写作区，每敲一个新字形就现下字体文件＝打字越打越卡。这一层是 user 层 !important，
+   压得过帧内任何作者表（含主题镜像表和 BetterCampus）。见 style.css 第 53 节同一件事。 */
+body.mce-content-body,
+body.mce-content-body * {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Lato, "Helvetica Neue", Arial, sans-serif !important;
+}

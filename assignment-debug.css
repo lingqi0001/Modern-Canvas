@@ -1,0 +1,759 @@
+/* =========================================================
+   Assignment 分析调试窗口（assignment-debug.js）的外观。
+
+   这是给我们自己看的仪表，不是产品界面，但它一样吃这套皮肤的规矩：
+   颜色全部走 --mc-* token（退路值和 study.css 同一套），圆角只有 16 / 12 / 10 / 8 那几档，
+   hover 只压暗不上浮，焦点环一律删掉。字号停在 11.5 到 14px 之间，和 AI 抽屉那一屏对得上。
+   ========================================================= */
+
+.mcx-adb-pill {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 10600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--mc-borders, rgba(0, 0, 0, 0.08));
+  border-radius: 9999px;
+  background: var(--mc-buttons, #f3f4f6);
+  color: var(--mc-text-0, #111827);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-adb-pill:hover {
+  background: var(--mc-tint-press, rgba(0, 0, 0, 0.1));
+}
+
+.mcx-adb-pill[hidden] {
+  display: none;
+}
+
+.mcx-adb-pillWord {
+  font-weight: 600;
+}
+
+.mcx-adb-pillBadge {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+  font-size: 11.5px;
+}
+
+.mcx-adb-panel {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 10600;
+  display: none;
+  flex-direction: column;
+  width: min(760px, calc(100vw - 36px));
+  height: min(74vh, 720px);
+  padding: 0 0 8px;
+  border: 1px solid var(--mc-borders, rgba(0, 0, 0, 0.08));
+  border-radius: 16px;
+  background: var(--mc-background-0, #f6f7f9);
+  color: var(--mc-text-0, #111827);
+  font: inherit;
+  font-size: 13px;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.24);
+  animation: mcx-adb-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* backwards 不是 both：终帧的 transform 留在元素上，这一层就变成 fixed 后代的包含块 */
+  animation-fill-mode: backwards;
+}
+
+.mcx-adb-panel.is-open {
+  display: flex;
+}
+
+@keyframes mcx-adb-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 拖的那几帧：位移全挂在 transform 上，所以下面那条 transition 必须一起关掉 */
+.mcx-adb-panel.is-dragging {
+  transition: none;
+}
+
+.mcx-adb-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px 10px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.mcx-adb-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mcx-adb-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mcx-adb-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--mc-borders, rgba(0, 0, 0, 0.08));
+  border-radius: 10px;
+  background: var(--mc-buttons, #f3f4f6);
+  color: var(--mc-text-0, #111827);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-adb-btn:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-adb-btn:active {
+  background: var(--mc-tint-press, rgba(0, 0, 0, 0.1));
+}
+
+.mcx-adb-btn.is-empty {
+  opacity: 0.5;
+}
+
+.mcx-adb-quiet {
+  background: transparent;
+  border-color: transparent;
+}
+
+.mcx-adb-quiet:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-adb-go {
+  background: var(--mc-buttons, #f3f4f6);
+  border-color: var(--mc-borders, rgba(0, 0, 0, 0.08));
+}
+
+.mcx-adb-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 14px 10px;
+}
+
+.mcx-adb-tab {
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--mc-text-0, #111827);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-adb-tab:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-adb-tab.is-on {
+  background: var(--mc-buttons, #f3f4f6);
+  border-color: var(--mc-borders, rgba(0, 0, 0, 0.08));
+  font-weight: 600;
+}
+
+.mcx-adb-runs {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 14px 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--mc-borders, rgba(0, 0, 0, 0.08));
+}
+
+.mcx-adb-runsLabel {
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-runsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mcx-adb-runChip {
+  padding: 4px 10px;
+  border: 1px solid var(--mc-borders, rgba(0, 0, 0, 0.08));
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--mc-text-1, #6b7280);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-adb-runChip:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-adb-runChip.is-on {
+  background: var(--mc-buttons, #f3f4f6);
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-adb-runsNone {
+  font-size: 11.5px;
+  color: var(--mc-text-2, #9ca3af);
+}
+
+.mcx-adb-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 14px;
+}
+
+.mcx-adb-foot {
+  flex: 0 0 auto;
+  padding: 6px 14px 0;
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-sec {
+  margin: 4px 0 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--mc-buttons, #f3f4f6);
+}
+
+.mcx-adb-secTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.mcx-adb-secNote {
+  margin-top: 2px;
+  margin-bottom: 8px;
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-sec > .mcx-adb-secNote {
+  margin-bottom: 0;
+}
+
+.mcx-adb-kv {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 4px 0;
+}
+
+.mcx-adb-kv.is-muted {
+  opacity: 0.6;
+}
+
+.mcx-adb-k {
+  flex: 0 0 210px;
+  font-size: 12px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-v {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+.mcx-adb-note {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-ok {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-warn {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--mc-text-0, #111827);
+  font-weight: 600;
+}
+
+.mcx-adb-empty {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-error {
+  margin: 6px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--mc-tint-press, rgba(0, 0, 0, 0.1));
+  color: var(--mc-text-0, #111827);
+  font-size: 12.5px;
+}
+
+.mcx-adb-loading {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+/* 请求记录：一条一行，状态码那颗点就是它成没成 */
+
+.mcx-adb-requests {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.mcx-adb-req {
+  display: grid;
+  grid-template-columns: 54px 150px minmax(0, 1fr) 120px;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: 11.5px;
+}
+
+.mcx-adb-req:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-adb-reqStatus {
+  font-weight: 600;
+}
+
+.mcx-adb-req.is-ok .mcx-adb-reqStatus {
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-adb-req.is-bad {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-adb-req.is-bad .mcx-adb-reqStatus {
+  color: var(--mc-text-0, #111827);
+  font-weight: 700;
+}
+
+.mcx-adb-reqLabel {
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-reqUrl,
+.mcx-adb-reqWhy,
+.mcx-adb-reqHead {
+  overflow-wrap: anywhere;
+  font-size: 11.5px;
+}
+
+.mcx-adb-reqWhy,
+.mcx-adb-reqHead {
+  grid-column: 1 / -1;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-dump {
+  margin-top: 10px;
+}
+
+.mcx-adb-dumpHead {
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-json {
+  margin: 4px 0 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--mc-background-0, #f6f7f9);
+  color: var(--mc-text-0, #111827);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.mcx-adb-units {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+
+.mcx-adb-unit {
+  display: grid;
+  grid-template-columns: 110px 130px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.mcx-adb-unit:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-adb-unit.is-boiler {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+  opacity: 0.75;
+}
+
+.mcx-adb-unitPath {
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-unitKind {
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+  overflow-wrap: anywhere;
+}
+
+.mcx-adb-unitFlag {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-src {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.mcx-adb-src:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-adb-srcName {
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+.mcx-adb-srcMeta,
+.mcx-adb-srcStatus {
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-gauge {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 40px minmax(0, 1.2fr);
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.mcx-adb-gaugeName {
+  font-size: 12.5px;
+}
+
+.mcx-adb-gaugeBar {
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--mc-background-0, #f6f7f9);
+  overflow: hidden;
+}
+
+.mcx-adb-gaugeFill {
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--mc-text-2, #9ca3af);
+  transition: width 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mcx-adb-gaugeNum {
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.mcx-adb-gaugeNote {
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-decision {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--mc-background-0, #f6f7f9);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mcx-adb-reason {
+  margin-top: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.mcx-adb-signal {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--mc-background-0, #f6f7f9);
+}
+
+.mcx-adb-signal.is-minus {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-adb-signalRule {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12.5px;
+}
+
+.mcx-adb-signalPoints {
+  flex: 0 0 auto;
+  min-width: 30px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.mcx-adb-signalPath {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-evidence {
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 2px solid var(--mc-borders, rgba(0, 0, 0, 0.08));
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.mcx-adb-signalFormula,
+.mcx-adb-formula {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+  overflow-wrap: anywhere;
+}
+
+.mcx-adb-total {
+  margin-top: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.mcx-adb-weight {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) auto 54px auto 54px auto 54px auto;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.mcx-adb-weightName {
+  font-size: 12.5px;
+}
+
+.mcx-adb-weightLabel {
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-weightInput {
+  width: 54px;
+  padding: 4px 6px;
+  border: 1px solid var(--mc-borders, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  background: var(--mc-background-0, #f6f7f9);
+  color: var(--mc-text-0, #111827);
+  font: inherit;
+  font-size: 12px;
+}
+
+.mcx-adb-weightInput:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-adb-weightFoot {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.mcx-adb-gate {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--mc-background-0, #f6f7f9);
+}
+
+.mcx-adb-gate.is-fired {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-adb-gateNum {
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-gateTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.mcx-adb-gateTest,
+.mcx-adb-gateHit {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+  overflow-wrap: anywhere;
+}
+
+.mcx-adb-slots {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.mcx-adb-slot {
+  padding: 5px 12px;
+  border: 1px solid var(--mc-borders, rgba(0, 0, 0, 0.08));
+  border-radius: 10px;
+  background: transparent;
+  color: var(--mc-text-0, #111827);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-adb-slot:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-adb-slot.is-on {
+  background: var(--mc-background-0, #f6f7f9);
+  font-weight: 600;
+}
+
+.mcx-adb-tagHead {
+  margin-top: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-tagHead.is-other {
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-adb-tagLine {
+  padding: 3px 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.mcx-adb-out {
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+/* 这座窗口里所有可点的节点都不留焦点环（换成主题色描边也算违规） */
+.mcx-adb-panel :is(button, input, [tabindex]):focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* 长内容不许把这行撑出横向滚动条 */
+.mcx-adb-panel * {
+  max-width: 100%;
+}
+
+/* 每条负向规则都要回报"判过了，没成"，所以这一排是逐条一行 */
+.mcx-adb-check {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: 8px;
+  align-items: baseline;
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-check.is-fired {
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-adb-checkFlag {
+  font-weight: 600;
+}
+
+.mcx-adb-checkLabel,
+.mcx-adb-checkWhy {
+  overflow-wrap: anywhere;
+}
+
+.mcx-adb-footNote {
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+}
+
+.mcx-adb-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+}
+
+/* 量出来的材料数：它和"读没读"是两件事，所以单独一行小字 */
+.mcx-adb-srcMeasure {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+  color: var(--mc-text-1, #6b7280);
+  overflow-wrap: anywhere;
+}
+
+.mcx-adb-srcMeasure.is-skipped {
+  color: var(--mc-text-2, #9ca3af);
+}

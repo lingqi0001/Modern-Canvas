@@ -1,0 +1,2848 @@
+/* ============ 48. AI study guide: our own drawer (study-panel.js) ============
+   右侧抽屉，不居中：他要一边看课件一边看这一屏。
+   颜色全吃主题那一份 token（--mc-*），没有一处写死：这座面板必须跟着主题走。
+   开关那一颗的几何照 Settings 那一份（24px 圆角方块、打开填强调色、里面一颗白勾）。 */
+
+.mcx-study-root {
+  position: fixed;
+  inset: 0;
+  z-index: 10500;
+  pointer-events: none;
+  --mcx-study-w: 560px;
+}
+
+.mcx-study-root.is-open {
+  pointer-events: auto;
+}
+
+.mcx-study-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.34);
+  opacity: 0;
+  transition: opacity 400ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.mcx-study-root.is-open .mcx-study-scrim {
+  opacity: 1;
+}
+
+/* 只动这一个节点的 transform：开和关同一条机制同一个时长 */
+.mcx-study-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--mcx-study-w);
+  max-width: calc(100vw - 24px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* 这一屏的底板吃"卡和面板那一档"（和设置那张卡同一份约定），不吃 background-1：
+     主题在 background-1 那一档放的常常是一幅图（没有可读的色），那时它会掉回 style.css 的退路值
+     #fafaf9，整块正文就成一个白洞，和抬头、脚、左边那一列的底色对不上 */
+  background: var(--mc-background-0, #f6f7f9);
+  color: var(--mc-text-0, #111827);
+  /* 靠左那颗圆；贴屏幕底那颗（左下）默认也圆——右侧栏收起时它是自由角。
+     右侧栏展开时下面那条把左下压回直角，让面板和那一栏在底边接成一条线 */
+  border-radius: 18px 0 0 18px;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.24);
+  transform: translateX(100%);
+  /* 圆角跟着位移同一时长、同一条曲线：贴右（底下两颗直）↔ 靠左（左边两颗直、右边两颗圆）
+     ↔ 悬浮窗（四颗圆角）之间换档时，那颗角是长出来的，不是啪一下跳过去的 */
+  transition: transform 400ms cubic-bezier(0.32, 0.72, 0, 1),
+              border-radius 400ms cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+/* 右侧栏（那颗 "<" 把手负责的那一栏）展开时，把 AI 面板左下压回直角：这一栏贴到面板左边，
+   两颗角在底边接成一条线，圆起来反而在接缝处缺个口。权重靠 html＋两个类名，压得住上面基础那条 */
+html.mcx-rail-open .mcx-study-panel {
+  border-radius: 18px 0 0 0;
+}
+
+.mcx-study-root.is-open .mcx-study-panel {
+  /* 静止态写 none，不写 translateX(0)：两者看起来一样，但带 transform 的那一种会把这一层
+     钉在合成层上，文字按这一层自己的原点重画——鼠标划过触发重绘时字会上下跳半像素（他报的那个抖）。
+     从 translateX(100%) 过渡到 none 是插值得到的，动画照旧 */
+  transform: none;
+}
+
+.mcx-study-head {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+  padding: 14px 12px 11px 18px;
+  background: var(--mc-background-0, #ffffff);
+}
+
+.mcx-study-headrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ---- 抬头下面那一条：Select tasks → Choose resources → Prompt ----
+   过了的变黑、当前这一步点成强调色，没到的压淡。只翻类名，不重建这一行 */
+.mcx-study-steps {
+  display: flex;
+  align-items: center;
+  padding-left: 2px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.5));
+}
+
+/* 历史那一屏不在那三步里，那一行整条收掉。后写的这条比上面那条多一个类，压得住 display:flex */
+.mcx-study-steps.is-off {
+  display: none;
+}
+
+.mcx-study-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 150ms ease;
+}
+
+.mcx-study-step + .mcx-study-step::before {
+  content: '';
+  width: 16px;
+  margin-right: 6px;
+  border-top: 1px solid var(--mc-borders, rgba(17, 24, 39, 0.16));
+  transition: border-color 150ms ease;
+}
+
+.mcx-study-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.45;
+  transition: opacity 150ms ease, background-color 150ms ease;
+}
+
+.mcx-study-step.is-done {
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-study-step.is-done .mcx-study-dot {
+  opacity: 1;
+}
+
+.mcx-study-step.is-done + .mcx-study-step::before {
+  border-top-color: var(--mc-text-2, rgba(17, 24, 39, 0.4));
+}
+
+.mcx-study-step.is-now {
+  color: var(--mc-text-0, #111827);
+  font-weight: 600;
+}
+
+.mcx-study-step.is-now .mcx-study-dot {
+  background: var(--mc-links, #2563eb);
+  opacity: 1;
+}
+
+.mcx-study-headmark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: var(--mc-links, #2563eb);
+  color: var(--mc-links-ink, #ffffff);
+}
+
+.mcx-study-headicon {
+  width: 16px;
+  height: 16px;
+}
+
+.mcx-study-headtitle {
+  flex: 1 1 auto;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.mcx-study-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--mc-text-0, #111827);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-study-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mcx-study-close:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-study-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  /* 滚动条贴在右边留白里，不越过那两只圆角 */
+  padding: 16px 18px 22px;
+}
+
+.mcx-study-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px 16px;
+  background: var(--mc-background-0, #ffffff);
+}
+
+.mcx-study-count {
+  flex: 1 1 auto;
+  font-size: 12.5px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+  line-height: 1.35;
+}
+
+.mcx-study-sec {
+  display: block;
+}
+
+.mcx-study-h {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-study-hint {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-dim {
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+/* ---- 课程那一行：点了才展开名单，不占地方 ---- */
+.mcx-study-coursebox {
+  margin-bottom: 12px;
+}
+
+.mcx-study-curseclose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 12px;
+  border: none;
+  border-radius: 12px;
+  background: var(--mc-background-0, #ffffff);
+  color: var(--mc-text-0, #111827);
+  font-size: 14px;
+  font-weight: normal;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-study-curseclose:hover {
+  background: var(--mc-background-0, #ffffff);
+  box-shadow: inset 0 0 0 1px var(--mc-borders, rgba(17, 24, 39, 0.12));
+}
+
+.mcx-study-curseclose span {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcx-study-curseclose svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-courselist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--mc-background-0, #ffffff);
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* 这两块下拉都是圆角 12px、又自己滚。Chrome 不会拿面板的 border-radius 去裁它自家的滚动条，
+   滑块是直角方块，上下两端会顶出圆角。不动 overflow（这一层本身就是滚动层，hidden 会把滚动关掉），
+   改成把滑块上下各让开 12px：透明边框缩它自己的绘制框，background-clip 让颜色只填内容区。
+   轨道只有 6px 宽（style.css 第 2 节），圆头要写椭圆半径：3px 是轨道的一半，15px = 3 + 让开的 12px，
+   减掉上下那两条边框正好剩 3×3 的整圆。带类名 + !important 才压得住第 2 节那条全局 border: none */
+.mcx-study-courselist::-webkit-scrollbar-thumb,
+.mcx-study-modelmenu::-webkit-scrollbar-thumb {
+  border-top: 12px solid transparent !important;
+  border-bottom: 12px solid transparent !important;
+  background-clip: content-box !important;
+  border-radius: 3px / 15px !important;
+}
+
+.mcx-study-course {
+  padding: 9px 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--mc-text-0, #111827);
+  font-size: 13.5px;
+  font-weight: normal;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-study-course:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-study-course.is-on {
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+}
+
+/* ---- 工具那一排：搜索框加那颗 Include past ---- */
+.mcx-study-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+/* 搜索框：两侧圆弧那一档，不用浏览器原生那个方框。
+   描边吃主题强调色一档，放大镜是这里自己画的线条图标，跟着文字色走 */
+.mcx-study-searchbox {
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.mcx-study-search {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 40px !important;
+  padding: 0 40px 0 16px !important;
+  border: 1px solid var(--mc-borders, rgba(17, 24, 39, 0.16)) !important;
+  border-radius: 9999px !important;
+  background: var(--mc-background-0, #ffffff) !important;
+  color: var(--mc-text-0, #111827) !important;
+  font: inherit !important;
+  font-size: 13.5px !important;
+  box-sizing: border-box !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease !important;
+}
+
+.mcx-study-search:hover {
+  border-color: var(--mc-links, rgba(17, 24, 39, 0.35)) !important;
+}
+
+.mcx-study-search::placeholder {
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.45)) !important;
+  opacity: 1 !important;
+}
+
+.mcx-study-search:focus,
+.mcx-study-search:focus-visible {
+  outline: none !important;
+  border-color: var(--mc-links, #2563eb) !important;
+  box-shadow: none !important;
+}
+
+.mcx-study-searchicon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.5));
+}
+
+.mcx-study-check {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--mc-text-0, #111827);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mcx-study-check input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mcx-study-box {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 1.5px solid var(--mc-press, rgba(17, 24, 39, 0.35));
+  background: transparent;
+  box-sizing: border-box;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.mcx-study-check input:checked + .mcx-study-box {
+  background: var(--mc-links, #2563eb);
+  border-color: transparent;
+}
+
+.mcx-study-check input:checked + .mcx-study-box::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 4px;
+  width: 6px;
+  height: 11px;
+  border: solid var(--mc-links-ink, #ffffff);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* ---- 行 ---- */
+.mcx-study-list {
+  display: block;
+}
+
+/* 分组标题本身是一颗全选键：整段都勾上＝实心勾，只勾了几条＝一横杠，一条没勾＝空框，再点一次整段翻过来。
+   那一段里没有一份读得出正文的（全是外链）就不摆框、也不给手型，免得点下去什么也不动。
+   框子比行里那颗小一档：这一行是段名不是条目，字也压小一号 */
+.mcx-study-mod {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px 5px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-study-mod:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-study-mod.is-plain {
+  cursor: default;
+}
+
+.mcx-study-mod.is-plain:hover {
+  background: transparent;
+}
+
+.mcx-study-modname {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mcx-study-mod .mcx-study-tick {
+  width: 16px;
+  height: 16px;
+  margin-top: 0;
+  border-radius: 6px;
+}
+
+.mcx-study-mod .mcx-study-tick svg {
+  width: 10px;
+  height: 10px;
+}
+
+.mcx-study-mod.is-all .mcx-study-tick {
+  background: var(--mc-links, #2563eb);
+  border-color: transparent;
+  color: var(--mc-links-ink, #ffffff);
+}
+
+.mcx-study-mod.is-part .mcx-study-tick {
+  border-color: var(--mc-links, #2563eb);
+  color: var(--mc-links, #2563eb);
+}
+
+.mcx-study-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--mc-text-0, #111827);
+  transition: background-color 150ms ease;
+}
+
+.mcx-study-row:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-study-row.is-on {
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+}
+
+.mcx-study-row.is-dead {
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.5));
+  cursor: default;
+}
+
+.mcx-study-row.is-dead:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-study-tick {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 7px;
+  border: 1.5px solid var(--mc-press, rgba(17, 24, 39, 0.3));
+  background: transparent;
+  box-sizing: border-box;
+  color: transparent;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.mcx-study-tick svg {
+  width: 12px;
+  height: 12px;
+}
+
+.mcx-study-row.is-on .mcx-study-tick {
+  background: var(--mc-links, #2563eb);
+  border-color: transparent;
+  color: var(--mc-links-ink, #ffffff);
+}
+
+.mcx-study-rowmain {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.mcx-study-rowside {
+  flex: 0 0 auto;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: right;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+  white-space: nowrap;
+}
+
+.mcx-study-kind {
+  margin-left: 8px;
+  font-size: 11.5px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-state {
+  margin-left: 8px;
+  font-size: 11.5px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+/* "让 AI 挑"之后那一行小字：它解释的是这一勾，所以勾撤掉字也跟着走 */
+.mcx-study-why {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+  font-weight: normal;
+}
+
+.mcx-study-empty {
+  padding: 18px 12px;
+  font-size: 13px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-note {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: var(--mc-background-0, #ffffff);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-ai-error-act {
+  margin-top: 8px;
+}
+
+.mcx-ai-error-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--mc-tint-press, rgba(0, 0, 0, 0.12));
+  background: var(--mc-background-0, #ffffff);
+  color: var(--mc-text-0, #111827);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  box-sizing: border-box;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mcx-ai-error-btn:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.mcx-ai-error-btn svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+/* ---- 药丸那一排 ---- */
+.mcx-study-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mcx-study-modelrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 13px;
+  font-size: 12px;
+  color: var(--mc-text-2);
+}
+
+.mcx-study-modelchip {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 72%;
+  gap: 6px;
+  border: 1px solid var(--mc-borders);
+  border-radius: 9999px;
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--mc-text-1);
+  font: inherit;
+  line-height: 17px;
+  cursor: pointer;
+  transition: background-color 150ms, color 150ms, border-color 150ms;
+}
+
+.mcx-study-modelchip:hover {
+  border-color: var(--mc-links);
+  background: var(--mc-tint);
+  color: var(--mc-text-0);
+}
+
+.mcx-study-modelchip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcx-study-modelico {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+}
+
+.mcx-study-pill {
+  padding: 7px 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--mc-background-0, #ffffff);
+  color: var(--mc-text-0, #111827);
+  font-size: 13px;
+  font-weight: normal;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.mcx-study-pill:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-study-pill.is-on {
+  background: var(--mc-links, #2563eb);
+  color: var(--mc-links-ink, #ffffff);
+}
+
+.mcx-study-aid {
+  margin-left: auto;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--mc-links, #2563eb);
+  font-size: 13px;
+  font-weight: normal;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--mc-borders, rgba(17, 24, 39, 0.14));
+  transition: background-color 150ms ease;
+}
+
+.mcx-study-aid:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-study-aid:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ---- 那一叠读数 ---- */
+.mcx-study-plate {
+  margin-top: 14px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: var(--mc-background-0, #ffffff);
+}
+
+.mcx-study-platerow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.mcx-study-platerow > span:first-child {
+  flex: 0 0 auto;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-platerow > span:last-child {
+  flex: 1 1 auto;
+  text-align: right;
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-study-ask {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 0 4px !important;
+  padding: 11px 12px !important;
+  border: 1px solid var(--mc-borders, rgba(17, 24, 39, 0.12)) !important;
+  border-radius: 12px !important;
+  background: var(--mc-background-0, #ffffff) !important;
+  color: var(--mc-text-0, #111827) !important;
+  font: inherit !important;
+  font-size: 13.5px !important;
+  line-height: 1.5 !important;
+  resize: vertical !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease !important;
+}
+
+.mcx-study-ask:focus,
+.mcx-study-ask:focus-visible {
+  outline: none !important;
+  border-color: var(--mc-links, #2563eb) !important;
+  box-shadow: 0 0 0 2px var(--mc-tint, rgba(37, 99, 235, 0.15)) !important;
+}
+
+/* ---- 历史那一屏 ---- */
+.mcx-study-historybtn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--mc-text-0, #111827);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-study-historybtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mcx-study-historybtn:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+/* 这一屏就是它打开的，所以亮着的时候 hover 不许再翻一档 */
+.mcx-study-historybtn.is-on {
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+}
+
+.mcx-study-historybtn.is-on:hover {
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+}
+
+/* 会话行就是普通那一行的形状，只是右边多一颗删除 */
+.mcx-study-del {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: -2px -6px 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.5));
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.mcx-study-del svg {
+  width: 15px;
+  height: 15px;
+}
+
+.mcx-study-del:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+  color: var(--mc-text-0, #111827);
+}
+
+/* ---- 底部那排按钮 ---- */
+.mcx-study-primary,
+.mcx-study-ghost {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 11px;
+  font-size: 13.5px;
+  font-weight: normal;
+  cursor: pointer;
+  transition: background-color 150ms ease, opacity 150ms ease;
+}
+
+.mcx-study-primary {
+  background: var(--mc-links, #2563eb);
+  color: var(--mc-links-ink, #ffffff);
+}
+
+.mcx-study-primary:hover {
+  background: var(--mc-links, #2563eb);
+  opacity: 0.88;
+}
+
+.mcx-study-primary:disabled {
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.08));
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.45));
+  cursor: default;
+  opacity: 1;
+}
+
+.mcx-study-ghost {
+  background: transparent;
+  color: var(--mc-text-0, #111827);
+  box-shadow: inset 0 0 0 1px var(--mc-borders, rgba(17, 24, 39, 0.14));
+}
+
+.mcx-study-ghost:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-study-ghost svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* 返回键＝圆形纯图标，和扩展页那颗同规格 */
+.mcx-study-back {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--mc-text-0, #111827);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-study-back svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mcx-study-back:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+/* 焦点环一律不画（这座面板统一不出现描环） */
+.mcx-study-panel :focus,
+.mcx-study-panel :focus-visible {
+  outline: none !important;
+  box-shadow: inherit;
+}
+
+.mcx-study-panel button:focus:not(:focus-visible) {
+  box-shadow: inherit;
+}
+
+/* ---- 结果那一屏 ---- */
+.mcx-study-out {
+  word-break: break-word;
+  font-size: 13.5px;
+  line-height: 1.62;
+  color: var(--mc-text-0, #111827);
+  min-height: 60px;
+}
+
+/* 排版关掉时才是纯文字：那一档才留着换行，排好的那一档由下面每一块自己管空白 */
+.mcx-f-plain {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mcx-f-turn + .mcx-f-turn {
+  margin-top: 18px;
+}
+
+/* 每一轮答复底下那一行用量：只有服务自己报了数才有字，所以它不带框、不带按钮，
+   字号和收件箱摘要底下那一行同一个档 */
+.mcx-f-use {
+  margin-top: 8px;
+  font-size: 11.5px;
+  line-height: 16px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+/* 他自己那句话：一块板子，和这一屏别处的板子同一档底色 */
+.mcx-f-q {
+  margin: 0 0 10px;
+  padding: 8px 11px;
+  border-radius: 11px;
+  background: var(--mc-background-0, #ffffff);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--mc-text-0, #111827);
+}
+
+/* ---- 排好版的回答：标题、条目、表格、算式都只吃主题那一份 token ---- */
+.mcx-f-h {
+  margin: 16px 0 6px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-f-a > .mcx-f-h:first-child {
+  margin-top: 0;
+}
+
+.mcx-f-h1 {
+  font-size: 14px;
+}
+
+.mcx-f-h2 {
+  font-size: 13.5px;
+}
+
+.mcx-f-h3 {
+  font-size: 13px;
+  color: var(--mc-text-1, rgba(17, 24, 39, 0.78));
+}
+
+.mcx-f-p {
+  margin: 0 0 8px;
+}
+
+.mcx-f-list {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+
+.mcx-f-list li {
+  margin: 0 0 4px;
+}
+
+.mcx-f-list .mcx-f-list {
+  margin: 4px 0 0;
+}
+
+/* Canvas 的复位样式表把 ul 的 list-style 抹成了 none，这里不点名就只剩缩进没有符号 */
+.mcx-f-ulist {
+  list-style: disc;
+}
+
+.mcx-f-olist {
+  list-style: decimal;
+}
+
+.mcx-f-list .mcx-f-ulist {
+  list-style: circle;
+}
+
+.mcx-f-list .mcx-f-olist {
+  list-style: lower-alpha;
+}
+
+.mcx-f-b {
+  font-weight: 600;
+}
+
+.mcx-f-i {
+  font-style: italic;
+}
+
+.mcx-f-del {
+  text-decoration: line-through;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-f-code {
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12.5px;
+}
+
+.mcx-f-pre {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: var(--mc-background-0, #ffffff);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.mcx-f-link {
+  color: var(--mc-links, #2563eb);
+}
+
+/* 模型引的那一条资料：牌子小、字压淡，点开就是那一份课件在 Canvas 上的那一页 */
+.mcx-f-cite {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 5px;
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.07));
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.6));
+  font-size: 10.5px;
+  line-height: 15px;
+  vertical-align: 1px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.mcx-f-cite:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-f-quote {
+  margin: 0 0 10px;
+  padding: 9px 12px;
+  border: none;
+  border-left: none;
+  border-radius: 11px;
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-f-quote > .mcx-f-p:last-child {
+  margin-bottom: 0;
+}
+
+.mcx-f-tablewrap {
+  margin: 0 0 12px;
+  overflow-x: auto;
+}
+
+.mcx-f-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.mcx-f-table th {
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: var(--mc-background-0, #ffffff);
+  font-weight: 600;
+  text-align: left;
+}
+
+.mcx-f-table td {
+  padding: 6px 9px;
+  vertical-align: top;
+}
+
+/* 算式里折不出 Unicode 下标的那一些会挂成真 sub／sup：
+   不压行高的话一行字会被它顶开 */
+.mcx-study-out sub,
+.mcx-study-out sup {
+  font-size: 0.78em;
+  line-height: 0;
+}
+
+/* 算式用衬线那一款：认得出是式子，又不用装任何东西 */
+.mcx-f-math {
+  font-family: "Cambria Math", "STIX Two Math", Georgia, "Times New Roman", serif;
+}
+
+.mcx-f-dmath {
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: var(--mc-background-0, #ffffff);
+  font-family: "Cambria Math", "STIX Two Math", Georgia, "Times New Roman", serif;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* 模型那条 --- 分隔：只留一段空白，不画线 */
+.mcx-f-gap {
+  height: 14px;
+}
+
+/* ---- 出处那一张表 ---- */
+.mcx-study-sources {
+  margin-top: 18px;
+}
+
+.mcx-f-srchead {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-f-src {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.mcx-f-src .mcx-f-cite {
+  flex: 0 0 auto;
+  margin-left: 0;
+}
+
+.mcx-f-srcname {
+  color: var(--mc-text-0, #111827);
+  text-decoration: none;
+}
+
+a.mcx-f-srcname:hover {
+  color: var(--mc-links, #2563eb);
+  text-decoration: underline;
+}
+
+/* ---- 追问那一排：输入框加一句价钱，都在底栏，不会被正文推着走 ---- */
+.mcx-study-foot.is-doc {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.mcx-study-askrow {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.mcx-study-follow {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 38px !important;
+  line-height: 38px !important;
+  margin: 0 !important;
+  padding: 0 16px !important;
+  border: 1px solid var(--mc-borders, rgba(17, 24, 39, 0.16)) !important;
+  border-radius: 9999px !important;
+  background: var(--mc-background-0, #ffffff) !important;
+  color: var(--mc-text-0, #111827) !important;
+  font: inherit !important;
+  font-size: 13.5px !important;
+  box-sizing: border-box !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  vertical-align: middle !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease !important;
+}
+
+.mcx-study-follow:hover {
+  border-color: var(--mc-links, rgba(17, 24, 39, 0.35)) !important;
+}
+
+.mcx-study-follow::placeholder {
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.45)) !important;
+  opacity: 1 !important;
+}
+
+.mcx-study-follow:focus,
+.mcx-study-follow:focus-visible {
+  outline: none !important;
+  border-color: var(--mc-links, #2563eb) !important;
+  box-shadow: 0 0 0 2px var(--mc-tint, rgba(37, 99, 235, 0.15)) !important;
+}
+
+.mcx-study-askrow button[data-follow] {
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 38px !important;
+  line-height: 38px !important;
+  margin: 0 !important;
+  padding: 0 18px !important;
+  border-radius: 9999px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+}
+
+.mcx-study-cost {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+/* 整场对话的累计挂在最后一轮底下，和每一轮那一行同一个字号，
+   这样"这一条用了多少"和"这一场一共多少"看上去是同一类东西 */
+.mcx-study-use {
+  margin-top: 8px;
+  font-size: 11.5px;
+  line-height: 16px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+/* 写给老师那一稿底下同一件事、同一个档 */
+.mcx-study-mtuse {
+  margin-top: 8px;
+  font-size: 11.5px;
+  line-height: 16px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-btnrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.mcx-study-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0;
+  font-size: 13px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-spin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--mc-borders, rgba(17, 24, 39, 0.16));
+  border-top-color: var(--mc-links, #2563eb);
+  opacity: 0;
+  box-sizing: border-box;
+  /* 转圈要等 250ms 才亮：快的请求不该闪一下加载符 */
+  animation: mcx-study-turn 900ms linear 250ms infinite, mcx-study-show 0s linear 250ms forwards;
+}
+
+@keyframes mcx-study-turn {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes mcx-study-show {
+  to { opacity: 1; }
+}
+
+/* ---- 侧栏那一行：和 Settings／Report a bug 同一规格，不另造一套 ---- */
+.mc-nav-study-item .menu-item-icon-container svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ---- 发送前那一屏的三项：哪份 key、哪个模型、要不要传图 ----
+   三行共用一套几何，谁也不许自己凑高度 */
+.mcx-study-send {
+  margin-top: 14px;
+}
+
+.mcx-study-sendrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.mcx-study-sendlabel {
+  flex: 0 0 62px;
+  font-size: 13px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-sendrow .mcx-study-pills {
+  margin-bottom: 0;
+  flex: 0 0 auto;
+}
+
+/* 药丸右边那一小灰字：这一档配的是哪个模型。名字长就自己折行，不许截成半截 */
+.mcx-study-sendmodel {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.mcx-study-modelwrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mcx-study-modelbtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px 6px 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--mc-background-0, #ffffff);
+  color: var(--mc-text-0, #111827);
+  font: inherit;
+  font-size: 13px;
+  font-weight: normal;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background-color 150ms ease;
+}
+
+.mcx-study-modelbtn:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-study-modelbtn span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcx-study-modelbtn svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.5));
+}
+
+.mcx-study-modelmenu {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--mc-background-0, #ffffff);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+}
+
+.mcx-study-modelopt {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--mc-text-0, #111827);
+  font: inherit;
+  font-size: 13px;
+  font-weight: normal;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-study-modelopt:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-study-modelopt.is-on {
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+}
+
+.mcx-study-modeltype {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-height: 40px !important;
+  box-sizing: border-box !important;
+  padding: 8px 14px !important;
+  border: 1px solid var(--mc-borders, rgba(17, 24, 39, 0.16)) !important;
+  border-radius: 12px !important;
+  background: var(--mc-background-0, #ffffff) !important;
+  color: var(--mc-text-0, #111827) !important;
+  font: inherit !important;
+  font-size: 13px !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease !important;
+}
+
+.mcx-study-modeltype:focus,
+.mcx-study-modeltype:focus-visible {
+  outline: none !important;
+  border-color: var(--mc-links, #2563eb) !important;
+  box-shadow: 0 0 0 2px var(--mc-tint, rgba(37, 99, 235, 0.15)) !important;
+}
+
+.mcx-study-imgrow {
+  min-height: 44px;
+}
+
+.mcx-study-imgrow.is-dead {
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.45));
+  cursor: default;
+}
+
+.mcx-study-imgrow input:disabled + .mcx-study-box {
+  border-color: var(--mc-borders, rgba(17, 24, 39, 0.16));
+}
+
+/* =========================================================
+   互动练习那一屏（study-practice.js 画的）。
+   两条约束管着这一段：
+   - 一切只挂在 .mcx-practice-* 上，Markdown、表格、引用、出处表、历史聊天那几套一行都不改。
+     解析不成时这一屏根本不出现，那些样式照旧生效。
+   - 正确／错误／不确定不只靠颜色分。那三档各带一个字形和一句话，
+     选项上也写着"correct answer""your pick"，颜色只是多给一层。
+   颜色全部吃主题那一份 token，一个写死的红绿都不放：这一屏必须跟着主题走。
+   ========================================================= */
+
+.mcx-practice {
+  min-width: 0;
+}
+
+.mcx-practice-head {
+  margin-bottom: 12px;
+}
+
+.mcx-practice-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--mc-text-0, #111827);
+  overflow-wrap: anywhere;
+}
+
+.mcx-practice-instructions {
+  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+  overflow-wrap: anywhere;
+}
+
+.mcx-practice-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.mcx-practice-nav-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9999px;
+  border: 1px solid var(--mc-borders, rgba(17, 24, 39, 0.15));
+  background: var(--mc-background-0, #ffffff);
+  color: var(--mc-text-1, rgba(17, 24, 39, 0.7));
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.mcx-practice-nav-btn:hover {
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.08));
+}
+
+.mcx-practice-nav-btn.is-active {
+  background: var(--mc-links, #2563eb);
+  color: #ffffff;
+  border-color: var(--mc-links, #2563eb);
+}
+
+.mcx-practice-nav-btn.is-done:not(.is-active) {
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.08));
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-practice-next {
+  padding: 7px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* 这套题答到第几题：和别处那行小字同一档，不另造字号 */
+.mcx-practice-progress {
+  margin-top: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--mc-text-1, rgba(17, 24, 39, 0.7));
+}
+
+.mcx-practice-note {
+  margin-top: 4px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-practice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* 一题一卡，卡底和这一屏别处的板子同一档，卡内不再套框 */
+.mcx-practice-card {
+  padding: 12px;
+  border-radius: 13px;
+  background: var(--mc-background-0, #ffffff);
+  min-width: 0;
+}
+
+.mcx-practice-card.is-done {
+  background: var(--mc-background-0, #ffffff);
+}
+
+.mcx-practice-top {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mcx-practice-num {
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-practice-concept {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--mc-text-0, #111827);
+  overflow-wrap: anywhere;
+}
+
+.mcx-practice-diff {
+  flex: 0 0 auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+  font-size: 11px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-practice-prompt {
+  margin: 6px 0 10px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--mc-text-0, #111827);
+  overflow-wrap: anywhere;
+}
+
+.mcx-practice-hint {
+  margin-top: 8px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.5));
+}
+
+/* 选项：静置不描边，只有 hover 和按下判定时才落一块板子 */
+.mcx-practice-options {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.mcx-practice-legend {
+  padding: 0;
+  font-size: 11.5px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-practice-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 9px;
+  border-radius: 11px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.mcx-practice-option:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-practice-option input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+}
+
+.mcx-practice-optmark {
+  flex: 0 0 auto;
+  min-width: 14px;
+  font-size: 12px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-practice-opttext {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--mc-text-0, #111827);
+  overflow-wrap: anywhere;
+}
+
+/* 判完才出现的两个记号：底版差一档，再加一句文字，颜色不是唯一的判据 */
+.mcx-practice-option.is-key {
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+}
+
+.mcx-practice-option.is-miss {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+.mcx-practice-option:has(.mcx-practice-choice:disabled) {
+  cursor: default;
+}
+
+.mcx-practice-tag {
+  flex: 0 0 auto;
+  max-width: 45%;
+  margin-left: auto;
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: right;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.6));
+}
+
+.mcx-practice-input {
+  width: 100% !important;
+  min-height: 64px;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px solid var(--mc-borders, rgba(17, 24, 39, 0.16)) !important;
+  border-radius: 12px;
+  background: var(--mc-background-0, #ffffff) !important;
+  color: var(--mc-text-0, #111827) !important;
+  font: inherit !important;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.mcx-practice-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mcx-practice-check {
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.mcx-practice-feedback {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mcx-practice-feedback:focus,
+.mcx-practice-feedback:focus-visible,
+.mcx-practice-card :focus,
+.mcx-practice-card :focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.mcx-practice-icon {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+}
+
+.mcx-practice-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mc-text-0, #111827);
+}
+
+/* 三档各自一句话加一个字形，底色只多压一档，不做红绿双色 */
+.mcx-practice-correct .mcx-practice-verdict svg,
+.mcx-practice-wrong .mcx-practice-verdict svg,
+.mcx-practice-uncertain .mcx-practice-verdict svg {
+  padding: 3px;
+  border-radius: 50%;
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.08));
+  width: 18px;
+  height: 18px;
+}
+
+.mcx-practice-answer {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mcx-practice-label {
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-practice-answerbody {
+  flex: 1 1 120px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--mc-text-0, #111827);
+  overflow-wrap: anywhere;
+}
+
+.mcx-practice-why {
+  padding: 9px 11px;
+  border-radius: 11px;
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--mc-text-0, #111827);
+  overflow-wrap: anywhere;
+}
+
+/* 来源那颗：默认整段折叠在按钮底下，点开才是标题和链接 */
+.mcx-practice-srctoggle {
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 12.5px;
+}
+
+.mcx-practice-srcchev {
+  transition: transform 200ms ease;
+}
+
+.mcx-practice-srctoggle[aria-expanded="true"] .mcx-practice-srcchev {
+  transform: rotate(180deg);
+}
+
+.mcx-practice-srclist[hidden] {
+  display: none !important;
+}
+
+.mcx-practice-srclist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  min-width: 0;
+}
+
+.mcx-practice-source {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.mcx-practice-sourcename {
+  min-width: 0;
+  color: var(--mc-text-0, #111827);
+  text-decoration: none;
+}
+
+a.mcx-practice-sourcename:hover {
+  color: var(--mc-links, #2563eb);
+  text-decoration: underline;
+}
+
+/* 简答题那三颗自评：一排同规格的药丸，选中那一颗落底版 */
+.mcx-practice-ratings {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mcx-practice-ratehead {
+  flex: 1 1 100%;
+  font-size: 12.5px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-practice-rate {
+  padding: 6px 12px;
+  font-size: 12.5px;
+}
+
+.mcx-practice-rate.is-on {
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.1));
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-practice-rated {
+  flex: 1 1 100%;
+  font-size: 11.5px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.5));
+}
+
+/* 结果屏底下那句课程进度。没进度时 JS 把这一行藏起来，不留占位 */
+.mcx-practice-coursestat {
+  margin-top: 14px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+  overflow-wrap: anywhere;
+}
+
+.mcx-practice-coursestat[hidden] {
+  display: none !important;
+}
+
+/* 抽屉收到最窄那一档时，一排按钮和来源行宁可折行也不许横着溢出去 */
+@media (max-width: 430px) {
+  .mcx-practice-card {
+    padding: 10px;
+  }
+
+  .mcx-practice-tag {
+    flex: 1 1 100%;
+    max-width: none;
+    margin-left: 24px;
+    text-align: left;
+  }
+
+  .mcx-practice-check,
+  .mcx-practice-srctoggle,
+  .mcx-practice-rate {
+    flex: 1 1 auto;
+  }
+}
+
+/* ==== 考点覆盖与"这一趟到底送了什么" ==== */
+/* 状态只靠那几个词区分，不再加色条、徽章或小点；行底下那道横线和左栏那条竖线一样不许有 */
+.mcx-study-sent {
+  margin: 0 0 14px;
+}
+
+.mcx-study-coverage {
+  margin-top: 20px;
+}
+
+.mcx-cov-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-cov-row.is-openable {
+  cursor: pointer;
+}
+
+.mcx-cov-row.is-openable:hover {
+  background: rgba(17, 24, 39, 0.05);
+}
+
+.mcx-cov-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mcx-cov-state {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+/* 折角这一颗是 CSS 画的，不用符号字符：它跟着文字色走，翻深浅两套都认 */
+.mcx-cov-row.is-openable::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--mc-text-2, rgba(17, 24, 39, 0.5));
+  border-bottom: 1.5px solid var(--mc-text-2, rgba(17, 24, 39, 0.5));
+  transform: rotate(-45deg);
+  transition: transform 200ms ease;
+}
+
+.mcx-cov-row.is-openable.is-open::after {
+  transform: rotate(45deg);
+}
+
+.mcx-cov-detail {
+  margin: 2px 8px 12px;
+  padding: 0 8px;
+  animation: mcx-cov-open 180ms ease-out both;
+}
+
+@keyframes mcx-cov-open {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+
+.mcx-cov-src {
+  margin: 0 0 5px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-cov-link {
+  color: var(--mc-links, #2563eb);
+  text-decoration: none;
+}
+
+a.mcx-cov-link:hover {
+  text-decoration: underline;
+}
+
+/* 摘录就是一块垫在原文底下的浅底，不描边；常驻会把他自己的笔记挤下去，所以只在点开时出现 */
+.mcx-cov-quote {
+  margin: 0 0 10px;
+  padding: 9px 12px;
+  border-radius: 11px;
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+  color: var(--mc-text-0, #111827);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.mcx-cov-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+/* 出处表里那一句"是这份资料的哪几片"，压淡排在标题后面 */
+.mcx-f-srcparts {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  font-size: 11.5px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-f-srcwarn {
+  margin: 7px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-f-srcwarn-tags {
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+
+/* =========================================================
+   49. 面板摆在页面的哪一处（study-panel.js 的 applyLayout 只管这三个类名和两个数）
+   三档形态：靠左停靠 / 靠右停靠 / 悬浮窗。停靠那一档默认把页面主列往边上推，
+   而不是盖在它上面：用这一屏的时候基本不会同时在看侧栏那几列，这段宽度与其压着不如让出来。
+   颜色还是全部吃 --mc-* 那一份 token，这一节一个字色值都没写死。
+   ========================================================= */
+
+/* --- 49.1 形态：靠哪一边、推不推页面、是不是悬浮窗 ---
+   root 是铺满视口的那一层。推挤和悬浮窗这两档页面必须还能点，所以 root 让开，
+   只留抽屉本体和遮罩自己接事件（原来那条 .is-open{pointer-events:auto} 留给"盖住页面"那一档） */
+/* 曲线挂在 html 上而不是挂在抽屉那一层上：推挤的那几条是页面上的节点，
+   它们不是这一层的子孙，读不到这一层里的自定义属性，整条 transition 会直接失效＝页面瞬移 */
+html {
+  --mcx-ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.mcx-study-root.is-open.is-push,
+.mcx-study-root.is-open.is-float {
+  pointer-events: none;
+}
+
+.mcx-study-root.is-open .mcx-study-panel {
+  pointer-events: auto;
+}
+
+/* 推挤和悬浮窗都没有东西要盖，那层遮罩整块撤掉：留着它就是一只按下去只关面板的透明大板 */
+.mcx-study-root.is-push .mcx-study-scrim,
+.mcx-study-root.is-float .mcx-study-scrim {
+  display: none;
+}
+
+/* 靠左：贴在应用侧栏右边，把课程那一列让出来的位置接过去。圆角跟着翻边。
+   那一段左边缘只认 study-panel.js 算出来的 --mcx-nav-w，而且它走的是位移不是 left：
+   实测这台是 150% 缩放（dpr 1.5），改 left 每帧都要重排整棵面板子树，侧栏一动画就是二十次全子树重排＝他报的卡顿；
+   位移是合成层的事，不动布局。数值在 JS 里已经按整数物理像素对过，不会因此再抖字 */
+.mcx-study-root.is-left .mcx-study-panel {
+  left: 0;
+  right: auto;
+  /* 靠左这一档：贴侧栏那一边两颗直、悬空那一边两颗圆。
+     右下那颗不摊平——摊平它是给"贴右时第三栏那颗缩放键顶在面板边上"用的，
+     靠左时那颗键在屏幕另一边，够不着这一角 */
+  border-radius: 0 18px 18px 0;
+  box-shadow: -18px 0 60px rgba(15, 23, 42, 0.24);
+  transform: translateX(calc(-100% - var(--mcx-nav-w, 0px)));
+}
+
+/* 展开态多挂一个类才压得住上面那条收起态（两条权重一样，就比谁写得晚）。
+   静止态是 translateX(那一段宽)，不是 translateX(0)：位移里带的是整数像素，
+   而这一层本来就要靠位移定位，去掉它反而要改用 left 走布局 */
+.mcx-study-root.is-open.is-left .mcx-study-panel {
+  transform: translateX(var(--mcx-nav-w, 0px));
+}
+
+/* 侧栏收放时面板跟着挪，走的就是上面那条位移（transform 400ms），不再单独给 left 加过渡：
+   位移改回 left 的话每帧都是一次全子树重排，那正是卡顿的来源 */
+
+/* 悬浮那一档要盖在照片查看器之上：查看器挂在 <html> 上、z-index 2147483000（sourceviewer.js），
+   判分大屏 .mcx-g-overlay 和它是同一档，所以压过查看器必然一并压过判分大屏，这一档没有别的位子。
+   取 2147483001：只比那一档高一，仍然低于影院模式的 2147483640。
+   贴边那一档不抬——它推挤页面，盖在查看器下面才对。
+   根在这一档是 pointer-events:none（上面 is-open.is-float 那条），所以抬上来不会变成一只拦住查看器的大透明板。 */
+.mcx-study-root.is-float {
+  z-index: 2147483001;
+}
+
+/* 悬浮窗：left/top/width/height 四个数由 JS 写在行内，四条边自己拖。
+   开和关同一条机制：位移收尾正好落在它的静止位，淡入只当额外的尾巴（比位移短） */
+.mcx-study-root.is-float .mcx-study-panel {
+  right: auto;
+  border-radius: 18px;
+  max-width: calc(100vw - 16px);
+  box-shadow: 0 22px 70px rgba(15, 23, 42, 0.28);
+  transform: translateY(14px) scale(0.985);
+  opacity: 0;
+  /* 这一档自己重写了 transition，所以圆角要在这里再点一次：
+     从悬浮窗切回贴边那一下读的是"落到哪一档"的那份 transition，漏了就瞬变 */
+  transition: transform 400ms var(--mcx-ease), opacity 260ms ease,
+              border-radius 400ms var(--mcx-ease);
+}
+
+.mcx-study-root.is-float.is-open .mcx-study-panel {
+  transform: none;
+  opacity: 1;
+}
+
+/* ---------- 悬浮那一档：整扇窗磨砂 ----------
+   贴边那一档吃主题自己的透明度（见 2476 行 html.mc-frost 那一条），可主题没开磨砂时
+   --mc-background-0 是一串实色，窗飘在页面上就成了一块不透明的板子——他要的是整扇都糊。
+   所以这一档不看主题那颗开关，自己把底板换成同档的半透明，糊挂在窗自己这一层。
+   数值和全局那条逐字相同（blur 24 / saturate 1.5，和 #mcx-search-panel 一份手感），
+   而且一座窗只挂一颗模糊层：抬头、脚、左栏在这一档退回透明，坐在糊好的这一层上面，
+   滚动和改大小都不为里面每颗卡重算一次。 */
+.mcx-study-root.is-float .mcx-study-panel {
+  background: color-mix(in srgb, var(--mc-background-0, #f6f7f9) 76%, transparent) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  backdrop-filter: blur(24px) saturate(1.5);
+}
+
+.mcx-study-root.is-float .mcx-study-head,
+.mcx-study-root.is-float .mcx-study-foot,
+.mcx-study-root.is-float .mcx-study-cols,
+.mcx-study-root.is-float .mcx-study-rail {
+  background: transparent !important;
+}
+
+/* 窗里那几颗本来就带半透明底的控件不再跟着叠第二层灰：它们吃 --mc-background-0 那一档，
+   上面已经把这一档换成半透明了，再自己铺一层就会比窗体深一档 */
+.mcx-study-root.is-float .mcx-study-row {
+  background: transparent !important;
+}
+
+.mcx-study-root.is-float .mcx-study-row:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05)) !important;
+}
+
+/* 推挤的时候页面主列是跟着一起走的，时长和曲线必须和抽屉同一份，不然一开一收两段路 */
+html.mcx-push-on #main,
+html.mcx-push-on #main #content,
+html.mcx-push-on #content,
+html.mcx-push-on #dashboard_view_wrapper,
+html.mcx-push-on .ic-Layout-contentMain {
+  transition: width 400ms var(--mcx-ease),
+              min-width 400ms var(--mcx-ease),
+              max-width 400ms var(--mcx-ease),
+              margin 400ms var(--mcx-ease),
+              padding 400ms var(--mcx-ease) !important;
+}
+
+/* 靠左那一档推的是"整页那一层"（标题行＋课程那一列＋正文一起走）。
+   那一层是哪一颗由 study-panel.js 在页面上当场认出来的，没有固定类名可写，
+   所以过渡挂在它自己补的那颗类名上。时长和曲线和抽屉同一份，一开一合同一条路 */
+html.mcx-push-on .mcx-push-host {
+  transition: margin-left 400ms var(--mcx-ease),
+              margin-right 400ms var(--mcx-ease);
+}
+
+/* --- 49.2 拖宽拖高的手柄 ---
+   停靠那一档只有朝里那一条边能拖（朝屏幕外那条拖动的是抽屉的墙）；悬浮窗三条都能用 */
+.mcx-study-resize {
+  position: absolute;
+  z-index: 4;
+  background: transparent;
+  transition: background-color 150ms ease;
+}
+
+.mcx-study-resize.is-w {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  cursor: ew-resize;
+}
+
+.mcx-study-resize.is-e {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  cursor: ew-resize;
+}
+
+.mcx-study-resize.is-s {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 9px;
+  cursor: ns-resize;
+  display: none;
+}
+
+/* 两个下角：按住这里宽和高一起走。它们压在两条单边之上（z-index 高一级），
+   不然角上那一片命中的只是先写的那条边，得拖两趟才能把大小都调完 */
+.mcx-study-resize.is-sw,
+.mcx-study-resize.is-se {
+  bottom: 0;
+  width: 20px;
+  height: 20px;
+  z-index: 5;
+  display: none;
+}
+
+.mcx-study-resize.is-sw {
+  left: 0;
+  cursor: nesw-resize;
+}
+
+.mcx-study-resize.is-se {
+  right: 0;
+  cursor: nwse-resize;
+}
+
+.mcx-study-root.is-float .mcx-study-resize.is-s,
+.mcx-study-root.is-float .mcx-study-resize.is-sw,
+.mcx-study-root.is-float .mcx-study-resize.is-se {
+  display: block;
+}
+
+.mcx-study-root:not(.is-float):not(.is-left) .mcx-study-resize.is-e,
+.mcx-study-root:not(.is-float).is-left .mcx-study-resize.is-w {
+  display: none;
+}
+
+.mcx-study-resize:hover,
+.mcx-study-resize.is-live {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.05));
+}
+
+/* 拖的时候不许页面里的字跟着被选中：拖完那一下会留下一片蓝。
+   这一趟也把抽屉自己的过渡关掉：宽度是手柄一路写下去的，留着过渡就成了拖着拖着它自己还在追。
+   悬浮窗搬位置走的是位移，will-change 只在这一趟挂：让浏览器把这一层单独合成，
+   每帧只挪一块已画好的图，而不是把整棵面板（正文加那圈外阴影）重画一遍。
+   松手就把位移换回 left/top 并撤掉这一条，静止态不留 transform（留着字会抖半像素） */
+.mcx-study-root.is-dragging,
+.mcx-study-root.is-dragging .mcx-study-panel {
+  user-select: none;
+  transition: none;
+}
+
+.mcx-study-root.is-dragging .mcx-study-panel {
+  will-change: transform;
+}
+
+/* --- 49.3 宽到一定程度分两列：左边聊天历史，右边这一条的内容 ---
+   窄的时候这一列不画，抬头那颗时钟还是原来那一屏，一行都不动 */
+.mcx-study-cols {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.mcx-study-rail {
+  display: none;
+}
+
+.mcx-study-root.is-wide.rail-on .mcx-study-rail {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 264px;
+  min-height: 0;
+  padding: 14px 12px 14px 16px;
+  background: var(--mc-background-0, #ffffff);
+}
+
+.mcx-study-railhead {
+  flex: 0 0 auto;
+  margin: 0 0 10px 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-railbody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.mcx-study-railfoot {
+  flex: 0 0 auto;
+  display: flex;
+  padding-top: 10px;
+}
+
+/* 这一列里那一排行要收得下：正文那一屏的字比行宽，行里的第二行不摆 */
+.mcx-study-rail .mcx-study-row {
+  padding: 9px 10px;
+  gap: 8px;
+}
+
+.mcx-study-rail .mcx-study-rowmain {
+  min-width: 0;
+}
+
+.mcx-study-rail .mcx-study-kind {
+  display: none;
+}
+
+.mcx-study-rail-empty {
+  margin: 6px 2px 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+/* --- 49.4 面板开着的时候，页面自己那两列让位 ---
+   这一节一条规则都没有，因为那两样都不用新写：
+   课程那一列（#left-side）走的是 style.css 5.1 节早就备好的 mc-course-nav-closing／-closed／-opening
+   那三个类名（那边已经有 300ms 的宽度过渡），应用侧栏那一档走的是站点自己收窄用的 mc-nav-min
+   （连那颗键的文案、文字被容器一点点擦掉那套设计一起跟着）。
+   挂和摘都在 study-panel.js 的 foldCourseNav／tuckSideNav，只在我们自己挂上过的时候才摘 */
+
+/* --- 49.5 右侧 To Do 那一列改成屏幕边上的一颗键 ---
+   折起来时整列退出页面流，中间那一列自己铺满；展开时它从那颗键后面滑出来，
+   不但不占正文的宽，也不用把正文再推一遍。开和关同一条 transform 同一个时长。
+   键的位置两态不动（它要是被自己打开的那一列推着走就按不到了），
+   所以那一列停在键的左边 46px 处，从它背后出来。
+   --mcx-rail-shift 是面板停在右边时让出的那一段，由 JS 写 */
+.mcx-rail-tab {
+  position: fixed;
+  z-index: 10420;
+  right: var(--mcx-rail-shift, 0px);
+  /* 键的高度中间＝面板抬头和内容区之间那条线（study-panel.js 的 paintGeom 量的，
+     写进 --mcx-rail-tab-top）。没量到过之前留着 44px 那颗退路：40 高的键中心仍然落在
+     旧那颗（22 ＋ 84／2）的中心上，退路那一档不会跳位置。
+     它的位置两态不动（它要是被自己打开的那一列推着走就按不到了） */
+  top: var(--mcx-rail-tab-top, 44px);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 14px 0 0 14px;
+  background: var(--mc-background-0, #ffffff);
+  color: var(--mc-text-0, #111827);
+  cursor: pointer;
+  /* 只留外阴影：那圈 resting 的边他拍了要撤（键和抽屉同档底色时，边把它框成一块贴片） */
+  box-shadow: -8px 10px 30px rgba(15, 23, 42, 0.16);
+  transition: background-color 150ms ease, right 400ms var(--mcx-ease);
+}
+
+html.mcx-rail-tab-mode .mcx-rail-tab {
+  display: flex;
+}
+
+/* 这颗收起把手的 hover 提亮按他要求撤掉：静置就是最终态，鼠标划过不变色 */
+
+.mcx-rail-tab:focus,
+.mcx-rail-tab:focus-visible {
+  outline: none;
+}
+
+.mcx-rail-tab svg {
+  width: 18px;
+  height: 18px;
+  /* 那颗箭头包在 <span> 里，svg 默认 inline：它会坐在文字基线上，行盒底下多出一条降部空，
+     字在板子里整体偏上 3 CSS px（量他那张图：字中心 154.5，板中心 172.5，图 6 倍）。
+     转成 block，那条空就没有了 */
+  display: block;
+}
+
+/* 折起来朝里、展开朝外：箭头方向说的就是"再按一下往哪边走" */
+.mcx-rail-tab .mcx-rail-chev.is-open {
+  display: none;
+}
+
+html.mcx-rail-open .mcx-rail-tab .mcx-rail-chev.is-open {
+  display: block;
+}
+
+html.mcx-rail-open .mcx-rail-tab .mcx-rail-chev.is-closed {
+  display: none;
+}
+
+html.mcx-rail-tab-mode #right-side-wrapper {
+  position: fixed !important;
+  z-index: 10410;
+  /* 让出的那一段不写在这里：right 一律钉 0，位移整个折进 transform（下面那两条）。
+     这一栏开着的时候是一枚满高的 backdrop-filter 浮层（见 2406 行那条），
+     按 right 推它＝每一帧重排＋重新取样糊一遍＝动画一路掉帧；只有 transform 走合成层那条路。
+     键和抽屉撞不上面时那 40px 走道由 syncRailPad 挂的 mcx-rail-pad-clear 收回 16px，见下面那条 */
+  right: 0;
+  /* 起点和最高那一段都是 study-panel.js 趁它还在页面流里时量出来的，不是这里猜的数 */
+  top: var(--mcx-rail-top, 150px);
+  /* 一屏到底：底下不留那 20px 缝（JS 那颗 --mcx-rail-max 已经改成量到屏幕边） */
+  max-height: var(--mcx-rail-max, calc(100vh - var(--mcx-rail-top, 150px)));
+  width: 360px;
+  max-width: calc(100vw - 60px - var(--mcx-rail-shift, 0px));
+  margin: 0 !important;
+  padding: 16px 56px 20px 16px !important;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 底板和面板同一档：这一列折成抽屉时它就是一个浮层面板，不吃 background-1（那一档在图上主题里没有色） */
+  background: var(--mc-background-0, #f6f7f9);
+  color: var(--mc-text-0, #111827);
+  border: none;
+  /* 只有左上那一颗是圆的：这一栏现在贴到屏幕底，下面留圆角会露出一道空槽 */
+  border-radius: 16px 0 0 0;
+  box-shadow: -12px 18px 48px rgba(15, 23, 42, 0.2);
+  /* 收起＝往右挪自己那一份宽（正好出屏）；展开＝往左挪面板让出的那一段。
+     两个落点和原来"right 吃变量 ＋ translateX(100%＋那一段)"的写法逐像素同一格。
+     收起这一档的目标值不再读 --mcx-rail-shift，所以挂档之后 paintGeom 才把变量写成面板宽，
+     也不会把已经起步的位移改道（上一版两条一起吃变量，改一次口＝重新起步，画面就是"啪一下没了"） */
+  transform: translateX(100%);
+  /* 折起来／还回页面流，那颗左上角跟着位移一起长，同一时长同一条曲线 */
+  transition: transform 400ms var(--mcx-ease), border-radius 400ms var(--mcx-ease);
+}
+
+html.mcx-rail-tab-mode.mcx-rail-open #right-side-wrapper {
+  transform: translateX(calc(-1 * var(--mcx-rail-shift, 0px)));
+}
+
+/* 键停在抽屉上方、两者不在同一竖条里撞面时，那 40px 走道没有要护的东西，收回到和左边同宽。
+   判据在 study-panel.js 的 syncRailPad（量两个方框），这里只认它挂的那个类名。
+   只收右边那一条，上下和左边照旧 */
+html.mcx-rail-tab-mode.mcx-rail-pad-clear #right-side-wrapper {
+  padding-right: 16px !important;
+}
+
+html.mcx-rail-tab-mode #right-side {
+  width: auto;
+  float: none;
+}
+
+/* 悬浮窗那一档整条抬头就是把手：只在飘着的时候给这个光标，停靠时它只是一行标题 */
+.mcx-study-root.is-float .mcx-study-head {
+  cursor: grab;
+}
+
+.mcx-study-root.is-float .mcx-study-head.is-live {
+  cursor: grabbing;
+}
+
+/* --- 49.6 底板换成"卡和面板那一档"之后要补的一圈边 ---
+   那五块原来只靠和正文底色差一档分出来，现在同一档了就分不出来了。
+   补的是这一屏里那颗课程下拉 hover 时同一条 inset 环、同一个 --mc-borders，不另发明一种线。
+   搜索框、药丸、追问框、表格头、代码块那几颗本来就带边，这里不重复描 */
+.mcx-study-plate,
+.mcx-f-q,
+.mcx-f-dmath,
+.mcx-practice-card,
+.mcx-study-curseclose {
+  box-shadow: inset 0 0 0 1px var(--mc-borders, rgba(17, 24, 39, 0.12));
+}
+
+/* --- 49.7 切到 feedback 那一屏时，待办那一侧的东西要一起让位 ---
+   style.css 11.4 节那句注释早就写了"feedback 时面板只剩顶部选项卡条"，但当时只把
+   面板的下外边距收掉；那三颗 View Course Stream /
+   Calendar / Notifications 是站点自己摆在 #right-side 底下的一摞（4843 那条只调过它们的间距），
+   它既不属于我们那块面板、也不属于 Recent Feedback，所以切过去时它谁都不跟，
+   就留在中间看着像 feedback 里长出来的。
+   收它们的判据用选项卡那一层自己挂的档名（bc-showing-feedback），不另发明一份状态。
+   "To-Do List" 那颗抬头不收：它是这块面板的名字，四档共用，切档不该让它消失。
+   进度那一条也不收了（2026-10-10 改）：它和抬头一样是四档共用的面板顶部，
+   换档时它不该跟着换；而且它本来只收得到 Bar 那一档，Ring 那两档一直留着，两边不一致 */
+#right-side.bc-showing-feedback #course_show_secondary {
+  display: none !important;
+}
+
+/* --- 49.8 历史屏顶部的 Learning Progress 进度卡片 --- */
+.mcx-history-progress {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--mc-background-0, #ffffff);
+  box-shadow: inset 0 0 0 1px var(--mc-borders, rgba(17, 24, 39, 0.12));
+}
+
+.mcx-history-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.mcx-history-progress-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-history-progress-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--mc-links, #2563eb);
+}
+
+.mcx-history-progress-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.6));
+}
+
+.mcx-history-progress-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.mcx-history-progress-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.04));
+}
+
+.mcx-hps-num {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--mc-text-0, #111827);
+}
+
+.mcx-hps-lbl {
+  font-size: 11px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+  margin-top: 2px;
+}
+
+.mcx-history-progress-stat.is-mastered .mcx-hps-num {
+  color: #16a34a;
+}
+
+.mcx-history-progress-stat.is-uncertain .mcx-hps-num {
+  color: #ca8a04;
+}
+
+.mcx-history-progress-stat.is-weak .mcx-hps-num {
+  color: #dc2626;
+}
+
+.mcx-history-progress-stat.is-due .mcx-hps-num {
+  color: var(--mc-links, #2563eb);
+}
+
+.mcx-history-progress-clear {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.mcx-history-progress-clear:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.06));
+  color: #dc2626;
+}
+
+/* ============ 49. 磨砂：卡底那一档透明时，糊的是抽屉这一块板 ============
+   主题作者把 cards 那一档留空（或设置里按了 No colour、拧了透明度滑杆）时，取色轮把
+   --mc-background-0 落成半透明浅底，并按"落在行内那一串的实际透明度"给 <html> 挂上
+   mc-frost（content.js 的 mcApplyAlphaPass，首帧由 theme-boot.js 同步挂，不会先实后糊）。
+   那一档有实色时这个类名根本不在，下面几条一行都不参与，正常主题零变化。
+   模糊只挂这一颗：抽屉里其余读 --mc-background-0 的 23 处（抬头、脚、左栏、卡与控件）
+   只带那层半透明底，坐在糊好的这一层上面＝一座抽屉一共一颗模糊层，滚动和开合不为每颗卡重算。
+   数值和全局搜索那颗逐字相同（#mcx-search-panel），两边要是一份手感。 */
+html.mc-frost .mcx-study-panel {
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  backdrop-filter: blur(24px) saturate(1.5);
+}
+
+/* 屏幕边上那颗收纳键（三横 加 ›）也糊：它和全局搜索那颗同构——直接挂在 body 上的一层 fixed，
+   所以取样取得到身后那一整页。它只有 40×84，用小的那一档 14px，和模型下拉、三点菜单同一颗数。
+   它自己那层 --mc-background-0 的半透明底照旧留着，糊挂在底下面一层。 */
+html.mc-frost .mcx-rail-tab {
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(14px) saturate(1.3);
+}
+
+/* 模型那颗菜单是 absolute，压在正文那些行上面：底下的字会从它 60% 的底里穿出来 */
+html.mc-frost .mcx-study-modelmenu {
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(14px) saturate(1.3);
+}
+
+/* ---------- 右侧那一栏折成抽屉时，糊要挂在这一栏自己身上 ----------
+   [实测 2026-10-10] 这一栏在展开态写的是 transform: translateX(0)——静止态带着位移，
+   而带位移的节点自己就是一道取样边界：它肚子里那些卡（.custom-todo-card、.ic-DashboardCard）
+   的 backdrop-filter 只能看到这一栏自己那层平涂，看不见身后那一整页，
+   所以挂了半天，卡还是透的。糊只能挂在这一栏这一颗上（它和全局搜索那颗一样，
+   自己带位移也照样糊得出来），栏里的卡退回不糊：它们那层半透明底正好坐在糊好的栏上。
+   没折成抽屉的时候（普通 Dashboard）这一栏没有位移，卡自己的模糊照常有效，那条留着。 */
+html.mc-frost.mcx-rail-tab-mode #right-side-wrapper {
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  backdrop-filter: blur(24px) saturate(1.5);
+}
+
+html.mc-frost.mcx-rail-tab-mode #right-side-wrapper .custom-todo-card,
+html.mc-frost.mcx-rail-tab-mode #right-side-wrapper .ic-DashboardCard,
+html.mc-frost.mcx-rail-tab-mode #right-side-wrapper [data-testid^="course-grade-card"] {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ============ 50. 给老师写信那一屏 ============ */
+
+/* 这一屏一段一段往下排：哪几条作业、写给哪位老师、要它说什么。
+   只有这一屏一次摆三段，所以这一条动不到别处 */
+.mcx-study-sec + .mcx-study-sec {
+  margin-top: 24px;
+}
+
+/* 快捷选择那两排：标题在上、药丸在下，和收件箱那一张同一个形状。
+   药丸本身吃现成的 .mcx-study-pill（选中那一档就是它那一套），这里只排标题 */
+.mcx-study-mtgroup {
+  margin-top: 12px;
+}
+
+.mcx-study-mtlabel {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-mtgen {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+/* 那一句提示跟着正文的字号就太大，一行还折成两行。降到这一屏别处小字同一档（12.5px），
+   只改这一句：.mcx-study-dim 在别处还管着"没有 key""正在读名单"那几行，不动它们 */
+.mcx-study-mtgen .mcx-study-dim,
+.mcx-study-mtmore .mcx-study-dim {
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+/* 名单下面那一颗：收回／摆全，数排在它右边 */
+.mcx-study-mtmore {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Generate 那颗里面是那颗 AI 记号。不给尺寸浏览器会按 300×150 画一张内联 SVG，
+   所以这条挂在整排主按钮上，以后别处往主按钮里塞图标也不用再补一次 */
+.mcx-study-primary svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+/* 稿子那一格：和补充说明同一副样子，只是高一些，留着他自己在里面改字 */
+.mcx-study-mtdraft {
+  min-height: 132px;
+  overflow-y: hidden !important;
+}
+
+/* ============ 51. Practice questions 那一档的样张 ============
+   形状照 .mcx-practice-card 那一颗，卡底同一档、同一圈 inset 环，
+   横条吃 difficulty 药丸那一条 --mc-background-2，所以深浅两套主题都跟着主题走。
+   宽度跟这一屏别处一样通到边（它上面那排药丸、下面补充说明框都是通宽的），
+   "小"只落在里面那一档几何：卡内边距、横条高度、字号都比真实题目卡收一号。
+   整块是死的，不参与点击也不进读屏 */
+.mcx-study-sample {
+  margin: 0 0 14px;
+  pointer-events: none;
+}
+
+.mcx-study-sample-cap {
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-sample-card {
+  padding: 10px 11px;
+  border-radius: 12px;
+  background: var(--mc-background-0, #ffffff);
+  box-shadow: inset 0 0 0 1px var(--mc-borders, rgba(17, 24, 39, 0.12));
+}
+
+.mcx-study-sample-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mcx-study-sample-num {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-sample-diff {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+  font-size: 10.5px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+/* 一道横条＝一行被拿掉的文字。长度排在这里，不在标记里写内联宽度 */
+.mcx-study-sample-bar {
+  display: block;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+}
+
+.mcx-study-sample-top .mcx-study-sample-bar {
+  width: 52%;
+}
+
+.mcx-study-sample-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 9px 0 10px;
+}
+
+.mcx-study-sample-prompt .mcx-study-sample-bar:last-child {
+  width: 62%;
+}
+
+.mcx-study-sample-legend {
+  margin-bottom: 3px;
+  font-size: 10.5px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-sample-opt {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 0;
+}
+
+.mcx-study-sample-dot {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.06));
+}
+
+.mcx-study-sample-mark {
+  flex: 0 0 auto;
+  min-width: 12px;
+  font-size: 11px;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}
+
+.mcx-study-sample-opt .mcx-study-sample-bar {
+  flex: 0 0 auto;
+}
+
+.mcx-study-sample-opts .mcx-study-sample-opt:nth-child(1) .mcx-study-sample-bar {
+  width: 58%;
+}
+
+.mcx-study-sample-opts .mcx-study-sample-opt:nth-child(2) .mcx-study-sample-bar {
+  width: 74%;
+}
+
+.mcx-study-sample-opts .mcx-study-sample-opt:nth-child(3) .mcx-study-sample-bar {
+  width: 40%;
+}
+
+.mcx-study-sample-opts .mcx-study-sample-opt:nth-child(4) .mcx-study-sample-bar {
+  width: 52%;
+}
+
+/* 未作答时真实那颗就是 disabled 那一副样子，这里照抄，不做成能点的样子 */
+.mcx-study-sample-check {
+  display: inline-block;
+  margin-top: 9px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--mc-background-2, rgba(17, 24, 39, 0.08));
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.45));
+  font-size: 12px;
+}
+
+.mcx-study-sample-note {
+  margin: 7px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--mc-text-2, rgba(17, 24, 39, 0.55));
+}

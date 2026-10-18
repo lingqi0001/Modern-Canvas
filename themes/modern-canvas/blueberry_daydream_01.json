@@ -1,0 +1,47 @@
+{
+  "title": "Blueberry Daydream",
+  "code": "blueberry_daydream_01",
+  "author": "Modern Canvas",
+  "mood": "蓝莓色的梦幻天空，柔和的月光与清爽的浅蓝交织，温柔而宁静。",
+  "colors": [
+    { "slot": "background-0", "value": "#f8fcff" },
+    { "slot": "background-1", "value": "#dcefff" },
+    { "slot": "background-2", "value": "#c6e1f5" },
+    { "slot": "borders", "value": "#aacde7" },
+    { "slot": "links", "value": "#186aa6" },
+    { "slot": "buttons", "value": "#d1e8fa" },
+    { "slot": "text-0", "value": "#173251" },
+    { "slot": "text-1", "value": "#426381" },
+    { "slot": "text-2", "value": "#66819b" },
+    { "slot": "sidebar", "value": "url(\"sidebar.jpg\"),linear-gradient(#244d82,#397aaa)" },
+    { "slot": "sidebar-text", "value": "#0b1f38" }
+  ],
+  "font": {
+    "family": "",
+    "link": ""
+  },
+  "exports": {
+    "disable_color_overlay": true,
+    "card_colors": [],
+    "card_title_colors": ["#173251"],
+    "custom_cards": [
+      "course-1.jpg",
+      "course-2.jpg",
+      "course-3.jpg",
+      "course-4.jpg",
+      "course-5.jpg",
+      "course-6.jpg"
+    ]
+  },
+  "regions": {
+    "sidebar": { "size": "cover", "repeat": "no-repeat", "pos": "50% 50%" },
+    "cards": [
+      { "size": "cover", "repeat": "no-repeat", "pos": "50% 50%" },
+      { "size": "cover", "repeat": "no-repeat", "pos": "50% 50%" },
+      { "size": "cover", "repeat": "no-repeat", "pos": "50% 50%" },
+      { "size": "cover", "repeat": "no-repeat", "pos": "50% 50%" },
+      { "size": "cover", "repeat": "no-repeat", "pos": "50% 50%" },
+      { "size": "cover", "repeat": "no-repeat", "pos": "50% 50%" }
+    ]
+  }
+}

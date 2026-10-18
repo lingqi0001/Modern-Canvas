@@ -1,0 +1,769 @@
+/* =========================================================
+   Assignment AI Guide 的样式。
+
+   几条照着开发文档/UI-STYLE.md 走的约束：
+   - 只用 --mc-* 那些档，一个具体色值都不写，换主题时才跟得上。
+   - 静置那一行没有边框，边框只在经过时出现；卡里的每一块靠字和留白分，不靠套框。
+   - 焦点环一律删掉，主题色描边也算违规。
+   - 圆角走那一把梯子：卡 16，里面那层 12，输入那一格 10，能勾的那颗圆到底。
+   - 展开只让卡自己长高，不动 Canvas 的任何一块。
+   ========================================================= */
+
+/* 一张圆角卡，不是页面里的一条表格：
+   底板吃 --mc-background-0（2026-10-12 他点名的那一档），上下那两条横线全删掉，
+   块与块之间只靠留白分。上下内距同一个数，左右同一个数：不对称的内距就是"间距不一致"的来源 */
+.mcx-guide {
+  box-sizing: border-box !important;
+  margin: 16px 0 16px var(--mcx-card-inset-left, 0px) !important;
+  max-width: var(--mcx-card-max-w, none) !important;
+  padding: 14px 16px !important;
+  background: var(--mc-background-0) !important;
+  border-radius: 16px !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: var(--mc-text-0) !important;
+}
+
+.mcx-guide * {
+  box-sizing: border-box !important;
+}
+
+/* 门那一行：标题是标题，不是一颗键，所以它没有经过态、也没有手型。
+   展开收起归右边那颗箭头 */
+.mcx-guide-head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  padding: 0 !important;
+  font: inherit !important;
+  color: var(--mc-text-0) !important;
+}
+
+.mcx-guide-head:focus,
+.mcx-guide-head:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.mcx-guide-title {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+  padding: 4px 8px !important;
+  margin: -4px -8px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  font-family: inherit !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  color: var(--mc-text-0) !important;
+  cursor: default !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+.mcx-guide-title.is-action {
+  cursor: pointer !important;
+}
+
+.mcx-guide-title.is-action:hover {
+  background: var(--mc-tint) !important;
+}
+
+.mcx-guide-title:focus,
+.mcx-guide-title:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.mcx-guide-spacer {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.mcx-guide-mark {
+  flex: 0 0 auto !important;
+  width: 17px !important;
+  height: 17px !important;
+  color: var(--mc-text-1) !important;
+}
+
+/* 中间那一格按状态换话：它可能是一段字，也可能就是那颗 Summarize。
+   字号跟标题同一档，两个词才站在同一条线上（他点的那条"不在同一个高度"） */
+.mcx-guide-hint {
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+  color: var(--mc-text-1) !important;
+}
+
+.mcx-guide-head .mcx-guide-act {
+  padding: 0 8px !important;
+  margin: 0 -8px !important;
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+}
+
+.mcx-guide-hint.is-warn {
+  color: var(--mc-text-0) !important;
+}
+
+.mcx-guide-prep::after {
+  content: '…' !important;
+}
+
+/* 门那一行右边两颗（收起、悬浮）是同一族：同一个 30 的圆、同一档经过底。
+   上一版一颗 24 方的、一颗 30 圆的，并排看就是一方一圆不成套（2026-10-12 他点的） */
+.mcx-guide-chevbtn,
+.mcx-guide-pop {
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  color: var(--mc-text-1) !important;
+  cursor: pointer !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease !important;
+}
+
+.mcx-guide-chevbtn:hover,
+.mcx-guide-pop:hover {
+  background: var(--mc-tint) !important;
+  color: var(--mc-text-0) !important;
+}
+
+.mcx-guide-chevbtn:focus,
+.mcx-guide-chevbtn:focus-visible,
+.mcx-guide-pop:focus,
+.mcx-guide-pop:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.mcx-guide-chev {
+  flex: 0 0 auto !important;
+  width: 15px !important;
+  height: 15px !important;
+  color: inherit !important;
+  transition: transform 0.18s ease !important;
+}
+
+.mcx-guide.is-open .mcx-guide-chev {
+  transform: rotate(180deg) !important;
+}
+
+/* 借住在 AI 抽屉那一座窗里时：外壳（底板、圆角、糊、拖、改大小）全是它给的，
+   这张卡就不该再自己铺一层底、收一圈角，否则窗里看着像套了第二张卡。
+   那一圈强调色留着，它说"现在这一站在窗里" */
+.mcx-guide.is-embedded {
+  margin: 0 !important;
+  padding: 0 0 6px !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* 窗抬头那三颗步骤点藏掉以后，正文就是贴着抬头开始的，第一块别再自己顶出一格 */
+.mcx-guide.is-embedded .mcx-guide-sec:first-child {
+  padding-top: 4px !important;
+}
+
+.mcx-guide.is-embedded .mcx-guide-pop {
+  box-shadow: 0 0 0 2px var(--mc-links) !important;
+  color: var(--mc-text-0) !important;
+}
+
+.mcx-guide.is-embedded .mcx-guide-pop:hover {
+  background: var(--mc-tint) !important;
+}
+
+.mcx-guide-popic {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* 展开动画容器：现代纯 CSS grid-template-rows 方案。
+   性能极致优化：
+   1. 动效仅限制在内部（contain: paint），杜绝向 Canvas 外层冒泡重排；
+   2. 收起时自动设置 visibility: hidden，让老电脑无额外渲染树负担；
+   3. 采用 iOS/Material 拟真减速曲线 (0.16, 1, 0.3, 1)，展开顺滑不卡顿；
+   4. 尊重新设备或无障碍用户的 prefers-reduced-motion 设置。 */
+.mcx-guide-body-wrapper {
+  display: grid !important;
+  grid-template-rows: 0fr !important;
+  contain: paint !important;
+  visibility: hidden !important;
+  transition: grid-template-rows 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.24s step-end !important;
+}
+
+.mcx-guide.is-open .mcx-guide-body-wrapper,
+.mcx-guide.is-embedded .mcx-guide-body-wrapper {
+  grid-template-rows: 1fr !important;
+  visibility: visible !important;
+  transition: grid-template-rows 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0s !important;
+}
+
+/* 展开的那一层：卡里不再套卡，也没有横线，一块一块靠标题和留白分 */
+.mcx-guide-body {
+  padding: 0 !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+  opacity: 0 !important;
+  transform: translateY(-4px) !important;
+  transition: opacity 0.2s ease-out,
+              transform 0.24s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  will-change: opacity, transform !important;
+}
+
+.mcx-guide.is-open .mcx-guide-body,
+.mcx-guide.is-embedded .mcx-guide-body {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mcx-guide-body-wrapper,
+  .mcx-guide-body,
+  .mcx-guide-chev {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+.mcx-guide-sec {
+  padding: 12px 0 2px !important;
+}
+
+.mcx-guide-secTitle {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.3px !important;
+  text-transform: uppercase !important;
+  color: var(--mc-text-2) !important;
+  margin-bottom: 6px !important;
+}
+
+.mcx-guide-sub {
+  font-size: 12px !important;
+  color: var(--mc-text-2) !important;
+  margin-bottom: 4px !important;
+}
+
+.mcx-guide-lead {
+  font-size: 14px !important;
+  color: var(--mc-text-0) !important;
+  margin-bottom: 4px !important;
+}
+
+.mcx-guide-line {
+  font-size: 13.5px !important;
+  color: var(--mc-text-0) !important;
+  margin: 3px 0 !important;
+}
+
+.mcx-guide-line.is-dim {
+  color: var(--mc-text-1) !important;
+  font-size: 12.5px !important;
+}
+
+.mcx-guide-src {
+  font-size: 12px !important;
+  color: var(--mc-text-2) !important;
+  margin-top: 8px !important;
+}
+
+.mcx-guide-notice {
+  margin: 10px 0 2px !important;
+  padding: 9px 11px !important;
+  border-radius: 10px !important;
+  background: var(--mc-background-2) !important;
+  color: var(--mc-text-0) !important;
+  font-size: 12.5px !important;
+}
+
+.mcx-guide-notice .mcx-ai-error-act {
+  margin-top: 8px !important;
+}
+
+/* 清单一行：圆点在左，字在右。静置无底色，整行不吃背景 */
+.mcx-guide-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 2px 0 !important;
+  margin: 2px 0 !important;
+}
+
+.mcx-guide-tick {
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  color: var(--mc-text-1) !important;
+  cursor: pointer !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: color 0.15s ease, background 0.15s ease !important;
+}
+
+.mcx-guide-tick:hover {
+  background: var(--mc-tint-press) !important;
+  color: var(--mc-text-0) !important;
+}
+
+.mcx-guide-tickic {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.mcx-guide-item.is-done .mcx-guide-tick {
+  color: var(--mc-text-0) !important;
+}
+
+.mcx-guide-item.is-done .mcx-guide-itemText {
+  color: var(--mc-text-2) !important;
+  text-decoration: line-through !important;
+}
+
+/* 只对文字区域做 hover，保留舒适的内边距与真正精致的圆角，不再通栏撑满整行 */
+.mcx-guide-itemText {
+  display: inline-block !important;
+  min-width: 0 !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  font-size: 13.5px !important;
+  color: var(--mc-text-0) !important;
+  transition: background 0.15s ease !important;
+  cursor: default !important;
+}
+
+.mcx-guide-itemText:hover {
+  background: var(--mc-tint) !important;
+}
+
+/* 容易漏的那几条：靠左边那一颗感叹形状分出来，不靠色条 */
+.mcx-guide-watch {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 9px !important;
+  margin: 6px 0 !important;
+  font-size: 13px !important;
+  color: var(--mc-text-0) !important;
+}
+
+.mcx-guide-warnic {
+  flex: 0 0 auto !important;
+  width: 15px !important;
+  height: 15px !important;
+  margin-top: 3px !important;
+  color: var(--mc-text-2) !important;
+}
+
+.mcx-guide-watchText {
+  min-width: 0 !important;
+}
+
+/* 引用那一小段是"这条从页面上哪句话来"，所以写得比正文轻一档 */
+.mcx-guide-quote {
+  display: block !important;
+  margin-top: 2px !important;
+  font-size: 12px !important;
+  font-style: italic !important;
+  color: var(--mc-text-2) !important;
+}
+
+.mcx-guide-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin: 10px 0 12px 0 !important;
+}
+
+@media (max-width: 680px) {
+  .mcx-guide-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.mcx-guide-fileCard {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+  background: var(--mc-surface-2, rgba(0, 0, 0, 0.04)) !important;
+  border: 1px solid var(--mc-border, rgba(0, 0, 0, 0.08)) !important;
+  min-width: 0 !important;
+  cursor: default !important;
+  transition: background 0.15s ease, border-color 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+.mcx-guide-fileCard.is-clickable {
+  cursor: pointer !important;
+}
+
+.mcx-guide-fileCard.is-clickable:hover {
+  background: var(--mc-tint, rgba(0, 0, 0, 0.08)) !important;
+}
+
+.mcx-guide-fileCard.is-clickable:hover .mcx-guide-fileNormal {
+  display: none !important;
+}
+
+.mcx-guide-fileCard.is-clickable:hover .mcx-guide-fileHover {
+  display: flex !important;
+}
+
+.mcx-guide-fileNormal {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  gap: 6px !important;
+}
+
+.mcx-guide-fileHover {
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--mc-primary, #6366f1) !important;
+  text-align: center !important;
+  height: 100% !important;
+}
+
+.mcx-guide-fileName {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 12.5px !important;
+  text-align: left !important;
+  color: var(--mc-text-0) !important;
+}
+
+.mcx-guide-fileSize {
+  flex: 0 0 auto !important;
+  font-size: 11.5px !important;
+  color: var(--mc-text-2) !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+}
+
+.mcx-guide-fileCard.is-read .mcx-guide-fileName {
+  text-decoration: line-through !important;
+  opacity: 0.65 !important;
+}
+
+.mcx-guide-fileCard.is-read .mcx-guide-fileSize {
+  opacity: 0.65 !important;
+}
+
+.mcx-guide-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  padding: 6px 0 !important;
+}
+
+.mcx-guide-rowName {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 13px !important;
+  color: var(--mc-text-0) !important;
+}
+
+.mcx-guide-rowSub {
+  flex: 1 1 auto !important;
+  font-size: 12px !important;
+  color: var(--mc-text-2) !important;
+}
+
+/* 卡底那一排的最右边一颗：形状跟那一排共用 .mcx-guide-act，这里只把它推到角上 */
+.mcx-guide-more {
+  margin-left: auto !important;
+}
+
+.mcx-guide-foot {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-top: 14px !important;
+  padding-top: 0 !important;
+}
+
+/* 这些动作一律是"能点的字"，不是药丸：一排板子就是他说的那句"搞这么多按钮干什么"。
+   经过时才落那一圈，按他定过的口径走 --mc-tint，150ms，不上影 */
+.mcx-guide-act {
+  padding: 5px 9px !important;
+  border: none !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  color: var(--mc-text-0) !important;
+  font: inherit !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+.mcx-guide-act:hover {
+  background: var(--mc-tint) !important;
+}
+
+.mcx-guide-act.is-quiet,
+.mcx-guide-act.is-quieter {
+  color: var(--mc-text-1) !important;
+  font-size: 12.5px !important;
+}
+
+.mcx-guide-act.is-quieter {
+  color: var(--mc-text-2) !important;
+}
+
+.mcx-guide-act.is-quiet:hover,
+.mcx-guide-act.is-quieter:hover {
+  color: var(--mc-text-0) !important;
+}
+
+/* Check my plan 点开才出现的那一小行 */
+.mcx-guide-plan {
+  display: flex !important;
+  flex: 1 1 100% !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* 输入那一格：不用浏览器原生那个方框，口径和搜索框那一颗完全一样
+   （细描边＋两侧圆弧，描边只在经过和打字时提一档，焦点环不画） */
+.mcx-guide-planInput {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 38px !important;
+  padding: 0 14px !important;
+  border: 1px solid var(--mc-borders, rgba(17, 24, 39, 0.16)) !important;
+  border-radius: 9999px !important;
+  background: var(--mc-background-0) !important;
+  color: var(--mc-text-0) !important;
+  font: inherit !important;
+  font-size: 13px !important;
+  box-sizing: border-box !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: border-color 150ms ease !important;
+}
+
+.mcx-guide-planInput:hover {
+  border-color: var(--mc-links, rgba(17, 24, 39, 0.35)) !important;
+}
+
+.mcx-guide-planInput::placeholder {
+  color: var(--mc-text-2) !important;
+  opacity: 1 !important;
+}
+
+.mcx-guide-planInput:focus,
+.mcx-guide-planInput:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: var(--mc-links, rgba(17, 24, 39, 0.35)) !important;
+}
+
+/* 下面这一段不是这张卡的：那是 Due / Points / Submitting 那一排的卡片化，
+   由另一条线加在这个文件里，留着别当垃圾删了 */
+
+/* 整个信息区域（Due / Points / Submitting / Available）改为圆角卡片，颜色用 --mc-background-0，去除上下横线，文字贴着边缘显示 */
+#assignment_show ul.student-assignment-overview {
+  border-top: none !important;
+  border-bottom: none !important;
+  border: none !important;
+  background: var(--mc-background-0) !important;
+  border-radius: 16px !important;
+  padding: 12px 16px !important;
+  margin: 16px 0 !important;
+  box-sizing: border-box !important;
+  list-style: none !important;
+}
+
+#assignment_show ul.student-assignment-overview > li {
+  margin: 0 !important;
+  color: var(--mc-text-0) !important;
+}
+
+#assignment_show ul.student-assignment-overview > li:first-child {
+  padding-left: 0 !important;
+}
+
+/* 那两张卡（这一排和下面的 Assignment Guide）右边比老师的正文宽出 193 像素（他页上实测：
+   卡 290→1583、正文 290→1390，正文自己写着 max-width:1100px）。
+   两边都吃同一份由 JS 抄来的变量，第一帧就齐平，不用等量完再缩。量不到时变量不存在＝原样 */
+#assignment_show ul.student-assignment-overview {
+  margin: 16px 0 16px var(--mcx-card-inset-left, 0px) !important;
+  max-width: var(--mcx-card-max-w, none) !important;
+}
+
+/* 作业还没开放的那一屏（实测 2026-10-13 /courses/296970/assignments/14485431）：Canvas 不画
+   #assignment_show，换了一份只有抬头的视图——
+     #content > div.assignment_header > h1#assignment_head
+       + ul#assignment_student_details   （Due / Points / Available 那一排）
+       + div.lock_explanation            （"This assignment is locked until …"）
+   上面那几条一条都落不到它身上（两个名字都不存在），所以那一排留着站点自己画的三条线：
+   ul 上下各 0.740741px rgb(187,187,187)、.assignment_header 底边 0.740741px rgb(164,164,164)。
+   照上面同一档补一份：卡底＋16px 圆角＋三条线删掉。锁定的那句由 assignment-guide.js
+   的 relocateLockNotice() 搬进这一排，跟另一屏同一处理。
+   宽度照抄同一份变量：这两张卡永远一起宽，未开放那一屏也不会因为 SPA 换页留着上一页的数 */
+#content > .assignment_header > ul#assignment_student_details {
+  border: none !important;
+  background: var(--mc-background-0) !important;
+  border-radius: 16px !important;
+  padding: 12px 16px !important;
+  margin: 16px 0 16px var(--mcx-card-inset-left, 0px) !important;
+  max-width: var(--mcx-card-max-w, none) !important;
+  box-sizing: border-box !important;
+  list-style: none !important;
+}
+
+#content > .assignment_header > ul#assignment_student_details > li {
+  margin: 0 !important;
+  color: var(--mc-text-0) !important;
+}
+
+/* 抬头那条底边就是"locked until"下面那根线：另一屏那一排底下没有线 */
+#content > .assignment_header {
+  border-bottom: none !important;
+}
+
+/* 作业页底部那两处白（实测数值写在 assignment-guide.js 的注释里）。
+   浅色那块换成卡底那一档＋收圆，跟上面两张卡同一层；
+   老师自己选的深色抬头（蓝／绿那两条）只收圆，底色一个字都不碰 */
+/* 首帧防闪：针对 DesignPlus 卡片（Objective、Practice、Activity、Custom Blocks 等），
+   不依赖 JS 跑完打标，纯 CSS 结构选择器首帧直达 16px 圆角 + background-0，消除闪烁！ */
+:is([id^="kl_wrapper_"], #dp-wrapper, .dp-wrapper) > :is(
+  [id^="kl_custom_block_"],
+  [id*="objective"],
+  [id*="practice"],
+  [id*="activity"],
+  [id*="assignment"],
+  .dp-content-block,
+  .kl_objectives
+) {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  background-color: var(--mc-background-0) !important;
+}
+
+html:is(.mc-themed, .mc-themed) :is(#assignment_show, .user_content) :is(.mc-dp-card, .mc-dp-card) {
+  background-color: var(--mc-background-0) !important;
+}
+
+:is(#assignment_show, .user_content) :is(.mc-dp-card, .mc-dp-card, .mc-dp-plate, .mc-dp-plate) {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
+/* 我们给这块铺了卡底、收了 16px 圆角，可老师那份模板自己没给内边距＝文字贴死在边线上。
+   [实测 2026-10-17 hcpss /courses/299728/assignments/14089170] #kl_custom_block_0 四周 padding 全 0，
+   正文起点和卡片左边缘是同一条线（x=416），右边也一样（正文最右 1387＝卡右边缘）。
+   这条刻意写成低权重（:where 把 html.mc-themed 那一层抹掉）：**模板自己排过内边距的一律照老师的走**。
+   同一页另一块自带 10px 的，加上这条之后实测仍是 10px，没被我们顶成 18px。
+   只补左右，不动上下：上下那 20px 是块里第一个孩子的 margin，量着不缺。 */
+:where(html.mc-themed) .mc-dp-card {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+/* 剥离 DesignPLUS 自带深色模式(#dp-wrapper.dp-dark-mode 涂的蓝黑底)，透出主题 background-1 */
+html:is(.mc-themed, .mc-themed) :is(#dp-wrapper, .dp-wrapper, [id^="kl_wrapper_"], .kl_wrapper) {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* 全局通杀：深色主题下卡片内部的所有文字默认强制继承高可读性 text-0 亮色，绝不留黑字 */
+html:is(.mc-themed, .mc-themed) :is(.mc-dp-card, .mc-dp-card) :is(p, span, li, h1, h2, h3, h4, h5, div, td, th):not([class*="btn"]):not([class*="Button"]):not(a):not(svg):not(i) {
+  color: var(--mc-text-0) !important;
+}
+
+/* 卡片内链接使用主题链接色 */
+html:is(.mc-themed, .mc-themed) :is(.mc-dp-card, .mc-dp-card) a:not([class*="btn"]):not([class*="Button"]) {
+  color: var(--mc-links-text, var(--mc-links)) !important;
+}
+
+/* GRADING RUBRIC 那条蓝的贴在上面那段底下：实测它是 #kl_objectives 里的 h3.mc-dp-plate，
+   站点自己只给了 margin-top:10px（量到上面那段列表底 1250、它顶 1260）。
+   以前整块都是白的看不出来，我们给它铺上卡底＋收了圆角之后，10px 就成了"两块咬在一起"。
+   只加"不是这一块里第一个"的那些：每组开头那条彩色横幅（绿色 MODULE 3）离上面我们自己的卡
+   本来就有 16px，不该再多出一格空。条子离它自己下面那块面板的缝不动——那两条本来就是一组 */
+html.mc-themed #assignment_show .description .mc-dp-plate:not(:first-child) {
+  margin-top: 24px !important;
+}
+
+/* 最底下那条 Previous：它原来吃 --mc-background-1（实测 rgb(250,250,249) 近白），
+   和这一页的页面底（--mc-buttons 米色）不是一档，所以看着像一块没上漆的板子。
+   2026-10-12 他拍的：这一层底色直接去掉，不要换成卡底那一档——它只是一条放按钮的带子，
+   不该是一块板。圆角和限宽跟着一起撤（没有面了就没有角可收）。
+   选择器必须带上 #content：站点那条自己带 id，只写类名或只写 #content 都压不住，两边一起带才赢 */
+html.mc-themed #content .module-sequence-footer-content {
+  background: transparent !important;
+}
+/* 作业名被站点自己压成 1 像素：那颗 h1 带着它自家的 screenreader-only，
+   规则在跨源的 brandable_css 里（实测 position:absolute、clip:rect(0,0,0,0)、宽高 0.99px），
+   我们读不到也删不掉，只能在我们这一层把它放开。
+   字号／字重一个字都不写：它本来就带着 28.8px 那一档，还原了就是旧版那一行的样子 */
+#assignment_show h1.title {
+  position: static !important;
+  clip: auto !important;
+  clip-path: none !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+  margin: 4px 0 12px !important;
+}
+
+/* 锁定提示搬到卡片里整行加粗显示 */
+.mcx-lock-overview-item {
+  width: 100% !important;
+  margin-top: 8px !important;
+  display: block !important;
+  font-weight: 700 !important;
+  color: var(--mc-text-0) !important;
+  letter-spacing: 0.01em !important;
+}

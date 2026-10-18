@@ -1,0 +1,221 @@
+/* =========================================================
+   EXPAND / FULLSCREEN 两颗按钮，和"网页内全屏"那一层覆盖
+   =========================================================
+   这一小截原来住在 style.css 里，搬出来单独一个文件、单独在 manifest 里挂 all_frames，
+   是因为 PDF 阅读器不是 Canvas 自己的页面：它是 Canvas 另开的一个独立网页
+   （canvadocs.instructure.com），跟外面的 hcpss.instructure.com 不同来源。
+   style.css 那一条注入没写 all_frames，Chrome 只把它灌进最外层，灌不进阅读器那一层，
+   于是按钮的 class 挂上了、管它的规则一条都没进去。屏幕上就是：
+   EXPAND 成了浏览器默认的白底带边框方块，FULLSCREEN 那颗还占着站点原本 44px 宽的图标位，
+   一串字母撑出去被卡片右边缘切掉，工具条因此多出一条横向滚动条。
+
+   只搬这一截、不整套灌进去：style.css 里全是给 Canvas 页面画的东西，
+   灌进人家的阅读器会连人家自己的界面一起改。
+
+   两个地方用这一套：文档阅读器（第 2 节那五个容器）、写作业那个富文本编辑器（第 4 节那条高度链）。
+   ========================================================= */
+
+/* --- 1. 两颗按钮 --- */
+.canvas-unified-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  /* 字色跟着它所在那一排继承：阅读器工具条那一排是白，编辑器底栏那一排是页面正文色。
+     两颗粒都挂这个类，所以它俩天然一个色，不用互相抄（原来写死白色，编辑器底栏那两颗就成了
+     白字压在奶油底上看不见；改成抄旁边那颗又踩中另一条：那颗自己也带过渡，抄到的是过渡中间的数） */
+  color: inherit !important;
+  cursor: pointer !important;
+  padding: 0 10px !important;
+  margin: 0 3px !important;
+  border-radius: 6px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.4px !important;
+  line-height: 26px !important;
+  height: 26px !important;
+  width: auto !important;
+  min-width: unset !important;
+  box-sizing: border-box !important;
+  text-transform: uppercase !important;
+  /* 只过渡底色。写 all 会把字色也挂上过渡，而"过渡中的值"在层叠里排在行内 !important 之上，
+     结果是字色永远读到一个中间值（实测：抄给它的深灰被压在黑底下出不来） */
+  transition: background-color 0.15s ease-in-out !important;
+  vertical-align: middle !important;
+  position: relative !important;
+}
+
+/* 按下和悬停的那层底，用字色自己叠一层半透明：
+   深色那一排（编辑器底栏）压出灰，浅色那一排（阅读器工具条）提亮，两边都不用各写一套色值 */
+.canvas-unified-btn:hover {
+  background-color: color-mix(in srgb, currentColor 16%, transparent) !important;
+}
+
+.canvas-unified-btn.active {
+  background-color: color-mix(in srgb, currentColor 28%, transparent) !important;
+}
+
+/* 藏图标：这颗按钮里除了我们写字的那个 span，其余子节点一律不画。
+   编辑器那一颗我们不删它的节点（删了就等于抢了 Canvas 自己的全屏功能），只能盖住它 */
+/* Only a converted native fullscreen button contains this marker. Hide its
+   whole original icon wrapper (not merely the nested SVG); standalone text
+   controls such as Theme Textbox and Expand are left untouched. */
+.canvas-unified-btn:has(.canvas-custom-fs-text) > :not(.canvas-custom-fs-text) {
+  display: none !important;
+}
+
+.canvas-custom-fs-text {
+  color: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  pointer-events: none !important;
+  white-space: nowrap !important;
+}
+
+/* The document viewer's icon controls have a transparent inherited text colour.
+   Limit the explicit label colour to that toolbar; editor and LTI controls keep
+   their own contrast-aware inherited colour. */
+:is(.ViewerControls, .canvashdr, .docviewer-wrapper) .canvas-unified-btn,
+:is(.ViewerControls, .canvashdr, .docviewer-wrapper) .canvas-custom-fs-text {
+  color: #fff4d3 !important;
+}
+
+.canvas-document-theme-btn,
+#canvas-inline-theater-btn {
+  white-space: nowrap !important;
+}
+
+.canvas-textbox-theme-btn { white-space: nowrap !important; }
+/* EXIT is a persistent state indicator. Hovering it should not add a second,
+   darker layer on top of its active background. */
+.canvas-unified-btn.active:hover {
+  background-color: color-mix(in srgb, currentColor 28%, transparent) !important;
+}
+.canvas-textbox-theme :is(.tox-editor-header, .tox-menubar, .tox-toolbar-overlord, .tox-toolbar__primary, .tox-sidebar) {
+  background-color: var(--mc-background-0) !important;
+  color: var(--mc-text-0) !important;
+}
+
+html.bc-colour-mode-dark .canvas-textbox-theme :is(.tox-editor-header, .tox-menubar, .tox-toolbar-overlord, .tox-toolbar__primary, .tox-sidebar),
+html.bc-colour-mode-dark .canvas-textbox-theme :is(.tox-mbtn, .tox-tbtn, .tox-split-button) {
+  color: var(--mc-text-2, #f4f1e8) !important;
+}
+
+html.bc-colour-mode-dark .canvas-textbox-theme :is(.tox-mbtn, .tox-tbtn, .tox-split-button) :is(svg, svg path) {
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* Canvas mounts the reply footer outside TinyMCE as message-body-*_statusbar.
+   It therefore needs its own opt-in selector instead of .tox-statusbar. */
+html.bc-colour-mode-dark [id^="message-body-"][id$="_statusbar"].canvas-textbox-theme-statusbar {
+  background-color: var(--mc-background-0) !important;
+  color: var(--mc-text-2, #f4f1e8) !important;
+  border-top-color: var(--mc-borders) !important;
+}
+
+html.bc-colour-mode-dark [id^="message-body-"][id$="_statusbar"].canvas-textbox-theme-statusbar :is(svg, svg path) {
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* The reply plate is outside TinyMCE. Theme its shell, but deliberately leave
+   text colour to Canvas' inner controls so white footer areas stay readable. */
+html.mc-disc-topic-plate .mc-reply-plate.canvas-textbox-theme-plate {
+  background-color: var(--mc-background-0) !important;
+  border: 1px solid var(--mc-borders) !important;
+}
+
+
+/* --- 2. 网页内全屏覆盖样式 ---
+   下面这一串选择器要逐个把 id 挂上，不能只留最后那条光秃秃的 class。
+   给 PDF 卡片画的那套（圆角、1px 描边、margin: 16px 0）在 style.css 里点名了 #doc_preview，
+   那是 id 级；两边同样带 !important 时比的是权重，id 赢 class，我们的 margin: 0 压不住它。
+   固定定位的元素 margin 照样算，所以那 16px 就把整块顶下去 16px，
+   屏幕上就是点完 EXPAND 顶部多出来的那条空隙（圆角和描边也是同一原因没去掉）。
+   五个候选容器跟 style.css 里那条一一对应，改那边要改这边 */
+.file-preview-holder.canvas-theater-fullscreen-target,
+.canvas_file_preview.canvas-theater-fullscreen-target,
+#doc_preview.canvas-theater-fullscreen-target,
+.ef-file-preview-frame.canvas-theater-fullscreen-target,
+.docviewer-holder.canvas-theater-fullscreen-target,
+.canvas-theater-fullscreen-target {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  z-index: 2147483640 !important;
+  background-color: #1e1e1e !important;
+  /* Canvas opens document previews as a modal and, on some course themes,
+     leaves a dimming opacity/filter on that preview shell.  Once this shell is
+     our full-page reader, retaining it darkens both the page and its toolbar. */
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.canvas-theater-fullscreen-target iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+}
+
+/* --- 3. 全屏时把左边那条导航藏掉 ---
+   全屏那块在 #main 里面，而 #main 是 position: relative + z-index: 10，等于自己开了一层。
+   我们的 z-index 写得再大，出了这一层也只算 10，压不过 z-index: 1200 的 #header（左边导航）。
+   抬 #main 会把整页内容一起提到导航之上，所以走另一条：进档时把导航本身藏掉，出档放回来。
+   也不用"把节点搬到 body"那招：预览器是个 iframe，搬动会让整份 PDF 重新加载一遍 */
+html.canvas-theater-expand #header {
+  display: none !important;
+}
+
+/* --- 4. 写作业那个输入框全屏时，把写作区一起撑开 ---
+   光把外面那一框盖满整屏没用：TinyMCE 的高度是一层一层写死的（实测 框 455 → 里面 400 → 318 → 写作区 316），
+   只盖外壳的话写作区还是 316px，底下空一大片。这一串把这条高度链接通。
+   关键是只让真正装编辑器的那一层跟着长：.rce-wrapper 底下除了它还有两个子（一个空壳、一个隐藏的
+   快捷键弹层，那个弹层自己写着 height:0），一起撑会把那条 0 高的弹层撑成 50 高，
+   屏幕上就是顶上多一条空带。所以用 :has() 只挑装编辑器的那一个。
+   实测改完：写作区 316 → 703，底栏钉在屏幕下沿，那两个空壳回到 0 高 */
+.canvas-theater-fullscreen-target .rce-wrapper {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.canvas-theater-fullscreen-target .rce-wrapper > div:has(.tox-tinymce) {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+
+.canvas-theater-fullscreen-target .tox-tinymce {
+  height: 100% !important;
+}
+
+.canvas-theater-fullscreen-target .tox-editor-container,
+.canvas-theater-fullscreen-target .tox-sidebar-wrap,
+.canvas-theater-fullscreen-target .tox-edit-area {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+.canvas-theater-fullscreen-target .tox-edit-area__iframe {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+}

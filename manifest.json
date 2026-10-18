@@ -1,0 +1,146 @@
+{
+  "manifest_version": 3,
+  "name": "Modern Canvas",
+  "version": "0.9.5",
+  "version_name": "0.9.5-release",
+  "description": "Give Canvas a fresh, modern look with soft rounded corners, beautiful colors, and smart tools to make studying easier than ever!",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["storage", "identity", "scripting", "tabs"],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Modern Canvas"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "themes/index.json",
+        "themes/t/*.json",
+        "themes/modern-canvas/*.json",
+        "themes/modern-canvas/*/*.jpg",
+        "vendor/pdf.mjs",
+        "vendor/pdf.worker.mjs",
+        "ocr-frame.html",
+        "ocr-frame.js",
+        "vendor/ocr/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.instructure.com/*",
+        "*://canvas.net/*",
+        "*://*.canvaslms.com/*"
+      ],
+      "css": ["style.css", "settings.css", "remote-content.css", "study.css", "assignment-debug.css", "assignment-guide.css"],
+      "js": ["mcx-css-debug.js", "theme-lib.js", "theme-boot.js", "nav-boot.js", "assignment-width-boot.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "*://*.instructure.com/calendar*",
+        "*://*.instructure.com/courses/*/calendar*",
+        "*://canvas.net/calendar*",
+        "*://canvas.net/courses/*/calendar*",
+        "*://*.canvaslms.com/calendar*",
+        "*://*.canvaslms.com/courses/*/calendar*"
+      ],
+      "css": ["theme-calendar.css"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "*://*.instructure.com/*",
+        "*://canvas.net/*",
+        "*://*.canvaslms.com/*"
+      ],
+      "js": ["modules-fx-guard.js", "planner-guard.js", "recipient-picker.js", "dashboard-widget-drop.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.instructure.com/*",
+        "*://canvas.net/*",
+        "*://*.canvaslms.com/*"
+      ],
+      "js": ["notif-boot.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "*://*.instructure.com/*",
+        "*://canvas.net/*",
+        "*://*.canvaslms.com/*"
+      ],
+      "js": ["theme-lib.js", "content.js", "search.js", "settings.js", "inbox-list.js", "inbox-ai.js",
+             "vendor/jszip.min.js", "canvas-data.js", "study-storage.js", "ai-client.js",
+             "study-format.js", "study-history.js", "study-progress.js", "study-retrieval.js",
+             "study-practice.js", "study-panel.js",
+             "assignment-analyze.js", "assignment-data.js", "assignment-baseline.js",
+             "assignment-debug.js", "assignment-guide.js", "remote-content-config.js", "remote-content.js",
+             "sourceviewer.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.instructure.com/*",
+        "*://canvas.net/*",
+        "*://*.canvaslms.com/*"
+      ],
+      "css": ["theater.css"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://*.instructure.com/*",
+        "*://canvas.net/*",
+        "*://*.canvaslms.com/*"
+      ],
+      "js": ["theater-frame.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://*.instructure.com/*",
+        "*://canvas.net/*",
+        "*://*.canvaslms.com/*"
+      ],
+      "css": ["preview-frame.css"],
+      "js": ["theme-frame-boot.js", "select-frame.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": ["*://*.instructure.com/*", "*://canvas.net/*", "*://*.canvaslms.com/*"],
+      "css": ["grading.css"],
+      "js": ["grading-core.js", "grading.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.instructure.com/*", "*://canvas.net/*", "*://*.canvaslms.com/*"],
+      "css": ["focus.css"],
+      "js": ["focus.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

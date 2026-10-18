@@ -1,0 +1,658 @@
+/* =========================================================
+   Focus 番茄钟。这份表在每一个网站上都会加载，所以里面每一条都必须
+   先认出 mcx-focus- 这个姓，没有一条裸标签选择器。
+   颜色全走主题 token，并且每一颗都带一份退路值：非 Canvas 站点上那些变量不存在。
+   ========================================================= */
+
+.mcx-focus-card,
+.mcx-focus-card * {
+  box-sizing: border-box;
+}
+
+/* fill-mode 必须是 backwards，不许写 both／forwards。
+   动画结束后还占着 transform:none 的话，它的优先级压过行内样式＝拖动时写的
+   translate3d 整个不生效，只有松手改 left/top 才看见动（他报的"不跟手"） */
+.mcx-focus-card {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Text", sans-serif;
+  color: var(--mc-text-0, #111827);
+  background-color: var(--mc-background-0, #ffffff);
+  border-radius: 16px;
+  padding: 12px 14px 14px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  animation: mcx-focus-in 320ms cubic-bezier(0.32, 0.72, 0, 1) backwards;
+}
+
+/* 退场和进场同一条机制、同一个时长，只是反着放。
+   墙上那张卡（.mcx-focus-vcard）也列进来：它和这条横栏是同一件事的两个落点，
+   以前只有 .mcx-focus-card 吃到这一条＝退场那张卡既不淡出也不关点击，
+   换视图时屏幕上同时两到四份面板，点那份的 × 还没反应（实测 ghost 卡 pointer-events=auto） */
+.mcx-focus-card.is-leaving,
+.mcx-focus-vcard.is-leaving {
+  animation: mcx-focus-out 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  pointer-events: none;
+}
+
+@keyframes mcx-focus-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.955); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes mcx-focus-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-8px) scale(0.955); }
+}
+
+/* 这里故意不写 animation:none。上一版写了它，松手摘掉这个类的那一趟会把进场那条动画
+   重新点着＝他报的"每次拖完都缩小再展开"。拖动期间也不需要：进场那 320 毫秒早跑完了 */
+.mcx-focus-card.is-dragging {
+  transition: none;
+}
+
+/* 卡底透明的那些主题里补一道糊，和浮层同一口径（html.mc-frost 那颗门控） */
+html.mc-frost .mcx-focus-card {
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+}
+
+/* 别的站点上没有 html.mc-frost 那颗门控，也没有 --mc-* 变量：
+   颜色由 focus.js 抄一份贴在卡自己身上（连 alpha 一起），磨砂在这一档补上 */
+.mcx-focus-card.is-away {
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+
+/* ---- 停在 Hub 上方那一格 ---- */
+
+.mcx-focus-dock {
+  width: 100%;
+}
+
+#right-side > :not(.custom-todo-panel):not(.bc-tab-feedback-hidden):not(.mcx-focus-card) ~ .mcx-focus-dock {
+  margin-top: 24px;
+}
+
+/* ---- 悬浮卡：本页悬浮，或固定以后跨页 ---- */
+
+/* 认类不认 id：退场那 320 毫秒里节点要先把 id 摘掉才算"当场除名"，样式不能跟着一起丢 */
+.mcx-focus-float {
+  position: fixed;
+  /* 这一档是照着现有梯子挑的，卡在"设置面板之上、任何提示／询问／警告之下"这一格：
+       10400 我们这颗（旧值，被设置面板压住＝开着设置就看不见计时）
+       10500 AI 那座抽屉   11000 设置面板 .mc-set-overlay   11002 设置里侧栏拖拽那一行
+       11010 我们的询问/警告弹窗 .bc-modal-overlay   11200 全站公告/问卷 .mcx-remote-overlay
+       99999 右上角那条更新提示   100000 搜索结果浮层
+     取 11005：大于 11000/11002，小于 11010 与 11200，中间没有别人的位子。
+     连带一条：设置面板本来就压着 AI 抽屉（10500），所以这颗跟着抬到设置之上，
+     也就一并抬到了 AI 抽屉之上——这是"大于设置面板"自己推出来的，不是另一件事。 */
+  z-index: 11005;
+  width: 248px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.10);
+  touch-action: none;
+  user-select: none;
+  /* 整块窗口是拿来搬的，所以手上是抓手；只有里面那几颗键回到指针 */
+  cursor: grab;
+}
+
+.mcx-focus-float.is-dragging {
+  cursor: grabbing;
+}
+
+.mcx-focus-float button {
+  cursor: pointer;
+}
+
+.mcx-focus-float .mcx-focus-grip {
+  position: absolute;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.mcx-focus-float .mcx-focus-grip[data-edge="se"] {
+  right: 0;
+  cursor: nwse-resize;
+  border-bottom-right-radius: 16px;
+}
+
+.mcx-focus-float .mcx-focus-grip[data-edge="sw"] {
+  left: 0;
+  cursor: nesw-resize;
+  border-bottom-left-radius: 16px;
+}
+
+/* ---- 抬头 ---- */
+
+.mcx-focus-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: default;
+}
+
+/* 抬头就是拿来抓的那一条：悬浮档下它得跟着整块窗口变抓手，不然手一放上去还是指针 */
+.mcx-focus-float .mcx-focus-head {
+  cursor: grab;
+}
+
+.mcx-focus-float.is-dragging .mcx-focus-head {
+  cursor: grabbing;
+}
+
+.mcx-focus-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.mcx-focus-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mcx-focus-ib {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+.mcx-focus-ib svg {
+  width: 15px;
+  height: 15px;
+}
+
+.mcx-focus-ib:hover {
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.07));
+}
+
+.mcx-focus-ib.is-on {
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.09));
+}
+
+/* ---- 挑时长那一屏 ---- */
+
+.mcx-focus-body {
+  margin-top: 10px;
+}
+
+.mcx-focus-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mcx-focus-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.mcx-focus-pill {
+  flex: 1 1 0;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.06));
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  outline: none;
+}
+
+.mcx-focus-pill:hover {
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.12));
+}
+
+.mcx-focus-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+}
+
+.mcx-focus-arrow {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.05));
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+.mcx-focus-arrow svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mcx-focus-arrow:hover {
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.11));
+}
+
+/* 数字这一格平时只是字，hover 上去才现出一只框（点进去就能敲）。
+   平时不给板子是不让这一排看着像三个都能按的东西 */
+.mcx-focus-readout {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background-color: transparent;
+  cursor: text;
+}
+
+.mcx-focus-readout:hover,
+.mcx-focus-readout:focus-within {
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.07));
+}
+
+.mcx-focus-num {
+  min-width: 14px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.1px;
+  color: inherit;
+  caret-color: currentColor;
+  outline: none;
+  white-space: pre;
+  /* 悬浮整块是 user-select:none 防误选，这一格要能选字改字，单独放行 */
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.mcx-focus-unit {
+  font-size: 12px;
+  color: var(--mc-text-1, rgba(17, 24, 39, 0.6));
+}
+
+.mcx-focus-go {
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.08));
+  color: inherit;
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+  outline: none;
+}
+
+.mcx-focus-go:hover {
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.14));
+}
+
+/* ---- 跑起来那一屏 ---- */
+
+/* 圆跟着卡的宽走，最大到 168px：卡拧大了圆还钉死在 148，看着就是一块空板 */
+.mcx-focus-ring {
+  position: relative;
+  width: calc(100% - 8px);
+  max-width: 168px;
+  aspect-ratio: 1 / 1;
+  margin: 4px auto 2px;
+}
+
+.mcx-focus-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.mcx-focus-track {
+  fill: none;
+  stroke: var(--mc-borders, rgba(0, 0, 0, 0.09));
+  stroke-width: 6;
+}
+
+.mcx-focus-arc {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+
+.mcx-focus-time {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.8px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 暂停变暗：Dashboard 那张虚拟卡的板子是课程卡自己那层，根上没有 .mcx-focus-card，
+   所以这一条只认 is-paused 那颗类，两种卡都管得到 */
+.mcx-focus-card.is-paused .mcx-focus-arc,
+.mcx-focus-card.is-paused .mcx-focus-time,
+.mcx-focus-vcard.is-paused .mcx-focus-arc,
+.mcx-focus-vcard.is-paused .mcx-focus-time {
+  opacity: 0.45;
+}
+
+.mcx-focus-ctrl {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.mcx-focus-btn2 {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.06));
+  color: inherit;
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+  outline: none;
+}
+
+.mcx-focus-btn2:hover {
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.12));
+}
+
+.mcx-focus-btn2 svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.mcx-focus-note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--mc-text-1, rgba(17, 24, 39, 0.65));
+}
+
+/* ---- 面板里那两问 ---- */
+
+.mcx-focus-q {
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.mcx-focus-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mcx-focus-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  padding: 9px 11px;
+  border: none;
+  border-radius: 11px;
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.05));
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+
+.mcx-focus-opt:hover {
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.11));
+}
+
+.mcx-focus-opt-name {
+  font-size: 13.5px;
+}
+
+.mcx-focus-quiet {
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--mc-text-1, rgba(17, 24, 39, 0.65));
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  outline: none;
+}
+
+.mcx-focus-quiet:hover {
+  color: var(--mc-text-0, #111827);
+}
+
+/* ---- 作业标题右边那颗 ---- */
+
+#mcx-focus-btn.mcx-focus-launch {
+  float: right;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0 auto;
+  /* Canvas 标题行比作业详情卡片略窄；轻微外移，避免入口超出详情卡右边缘。 */
+  margin-right: -12px;
+  padding: 6px 15px;
+  width: max-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 9px;
+  background-color: var(--mc-background-0, #ffffff);
+  color: var(--mc-text-0, #111827);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Text", sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  cursor: pointer;
+  outline: none;
+}
+
+#mcx-focus-btn.mcx-focus-launch:hover {
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.08));
+}
+
+/* ---- Dashboard 上那张虚拟卡 ----
+   外面那一层是站点和主题已经画好的课程卡（我们挂的是同一个 .ic-DashboardCard），
+   所以卡底、圆角、描边、hover、瀑布流排队全部自动跟。我们只补封面那一格，
+   里面那一块不再另铺一层卡底：一个区域一张卡。 */
+.mcx-focus-vcard {
+  position: relative;
+  cursor: grab;
+  /* 卡墙上 Canvas 自己给容器写了一串文字色（ndm 实测 #2D3B45），这张卡里凡是 color:inherit
+     的东西都被它带跑，和旁边课程卡标题（主题 --mc-text-0）不是一档。钉在卡壳上，
+     入口行和展开后的面板一起跟着主题走，Grades 那一格本来自己钉的就是同一档。 */
+  color: var(--mc-text-0, inherit);
+}
+
+.mcx-focus-vcard.mcx-wall-dragging {
+  cursor: grabbing;
+  pointer-events: none;
+  /* 保留布局尺寸，但原位整张卡（包括底色、阴影及伪元素）不绘制。 */
+  opacity: 0 !important;
+  transition: none !important;
+}
+
+.mcx-wall-ghost {
+  z-index: 2147483646 !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  transition: none !important;
+  animation: none !important;
+  overflow: hidden;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .14) !important;
+  will-change: transform;
+}
+
+.mcx-focus-vcard .mcx-focus-cover {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+}
+
+.mcx-widget-settings {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--mc-background-0, transparent);
+  color: inherit;
+  cursor: pointer;
+  transition: none;
+}
+
+.mcx-widget-settings:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.mcx-widget-settings svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* 图和色膜分两层，和主题给真卡片配的那两层（::before 图／::after 膜）同一画法，
+   溢出一像素也是同一条：图层比卡片窄一截时卡片自己的底会从缝里露出来 */
+.mcx-focus-vcard .mcx-focus-cover::before,
+.mcx-focus-vcard .mcx-focus-cover::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+}
+
+.mcx-focus-vcard .mcx-focus-cover::before {
+  background-image: var(--mcx-fc-img, none);
+  background-size: var(--mcx-fc-size, cover);
+  background-position: var(--mcx-fc-pos, center);
+  background-repeat: var(--mcx-fc-repeat, no-repeat);
+  filter: var(--mcx-fc-filter, none);
+}
+
+.mcx-focus-vcard .mcx-focus-cover::after {
+  background: var(--mcx-fc-film, none);
+}
+
+.mcx-focus-vcard .mcx-focus-slot {
+  padding: 12px 14px 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Text", sans-serif;
+}
+
+/* 独立卡片模式 (Separate cards) */
+.mcx-focus-vcard.mcx-focus-standalone:not(.has-cover) .mcx-focus-cover {
+  display: none !important;
+}
+
+.mcx-focus-vcard.mcx-focus-standalone [data-act="close"] {
+  display: none !important;
+}
+
+.mcx-focus-vcard.mcx-focus-standalone:not(.has-cover) .mcx-focus-slot {
+  padding: 14px 16px 18px !important;
+}
+
+.mcx-focus-vcard.mcx-focus-standalone.has-cover .mcx-focus-slot {
+  padding: 12px 14px 16px !important;
+}
+
+/* 缩成入口那一档：只剩一行 Focus，整行都能点 */
+.mcx-focus-entry {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 3px 6px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+
+/* 三个入口共用这一颗闹钟：颜色走 currentColor（跟着那颗键自己的文字色翻深浅）。
+   尺寸不写死像素，写 1.2em：跟着那一行自己的字号走。
+   上一版钉 15px，而横栏那行字本身就是 15px 粗体，图标比字还小一圈＝他报的"图标太小了"。
+   容器不动（那颗键的高和 padding 一个字都没改），只把字形放大这一档。 */
+.mcx-focus-entry svg,
+#mcx-focus-btn.mcx-focus-launch svg {
+  flex: none;
+  width: 1.7em;
+  height: 1.7em;
+}
+
+.mcx-focus-entry svg,
+#mcx-focus-btn.mcx-focus-launch svg {
+  transform: translateY(-0.12em);
+}
+
+.mcx-focus-entry:hover {
+  background-color: var(--mc-tint-press, rgba(0, 0, 0, 0.07));
+}
+
+.mcx-focus-vcard .mcx-focus-body {
+  margin-top: 8px;
+}
+
+/* Opening Focus from the shared Widget Card matches the Grades panel entrance. */
+.mcx-focus-vcard .mcx-focus-body.is-entering {
+  animation: mcx-focus-widget-panel-in 300ms cubic-bezier(.16, 1, .3, 1) both;
+  transform-origin: top center;
+}
+
+@keyframes mcx-focus-widget-panel-in {
+  from { opacity: 0; transform: translateY(7px) scale(.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.mcx-focus-vcard .mcx-focus-ring {
+  max-width: 148px;
+}
